@@ -1,0 +1,83 @@
+{
+  "nodes": {
+    "home-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1779969295,
+        "narHash": "sha256-HwIJ3tOcwSMiV75L7KqJXciXR9UfT+d7rwOZMX7cTnA=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "61e2c9659324181e0f0ed911958c536333b1d4f6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1779560665,
+        "narHash": "sha256-tpyBcxPpcQb8ukyNF7DoCwfSY3VPsxHoYwj00Cayv5o=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "64c08a7ca051951c8eae34e3e3cb1e202fe36786",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "home-manager": "home-manager",
+        "nixpkgs": "nixpkgs",
+        "st-src": "st-src",
+        "sxwm-src": "sxwm-src"
+      }
+    },
+    "st-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1641555597,
+        "narHash": "sha256-pULT784097GkY+rXElCCYLExJ5ORxYlJ5qeXCojUx0c=",
+        "ref": "refs/tags/0.8.5",
+        "rev": "7fb0c0cc681f36be2ad12091ef93a41671f32738",
+        "revCount": 1140,
+        "type": "git",
+        "url": "https://git.suckless.org/st"
+      },
+      "original": {
+        "ref": "refs/tags/0.8.5",
+        "type": "git",
+        "url": "https://git.suckless.org/st"
+      }
+    },
+    "sxwm-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1770405086,
+        "narHash": "sha256-jeOwahG5oNtAKAZTNlddCwzE3ZY9+apU8Lw2JQErB7k=",
+        "owner": "uint23",
+        "repo": "sxwm",
+        "rev": "1701f1650141eb20e34f376bed05cd46d44420a9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "uint23",
+        "repo": "sxwm",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
