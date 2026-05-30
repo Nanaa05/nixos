@@ -1,50 +1,28 @@
 { config, lib, pkgs, ... }:
-
 let
-  elegant-grub-src = pkgs.fetchFromGitHub {
-    owner = "vinceliuice";
-    repo = "Elegant-grub2-themes";
-    rev = "master";
-    sha256 = "sha256-fbZLWHxnLBrqBrS2MnM2G08HgEM2dmZvitiCERie0Cc="; 
-  };
-
   my-custom-grub-theme = pkgs.stdenv.mkDerivation {
     pname = "elegant-grub-custom";
     version = "1.0";
-    src = elegant-grub-src;
-
-    customWallpaper = ./wallpaper.jpg;
-
+    src = ./elegant-grub-theme;
     nativeBuildInputs = [ pkgs.imagemagick ];
-
     installPhase = ''
       mkdir -p $out
-
+      
       cp common/terminus*.pf2 $out/
       cp common/unifont-16.pf2 $out/
       cp config/theme-sharp-left-dark-1080p.txt $out/theme.txt
-
       cp -r assets/assets-icons-dark/icons-dark-1080p $out/icons
-
       cp assets/assets-other/other-1080p/select_e-forest-dark.png $out/select_e.png
       cp assets/assets-other/other-1080p/select_c-forest-dark.png $out/select_c.png
       cp assets/assets-other/other-1080p/select_w-forest-dark.png $out/select_w.png
       cp assets/assets-other/other-1080p/sharp-left-alt.png $out/info.png
-      cp assets/assets-other/other-1080p/Default.png $out/logo.png
 
-      WIDTH=$(identify -format "%w" "$customWallpaper")
-      HEIGHT=$(identify -format "%h" "$customWallpaper")
-      MIDPOINT=$(( WIDTH / 2 ))
-
-      convert "$customWallpaper" \
-        -draw "fill black rectangle $MIDPOINT,0 $WIDTH,$HEIGHT" \
-        $out/background.png
-
-      convert "$customWallpaper" \
+      cp ${./background.png} $out/background.png
+      convert ${./wallpaper.jpg} \
         -resize "1920x1080^" \
         -gravity center \
         -extent "1920x1080" \
-        $out/splash.png
+        $out/splash.png      
 
       sed -i 's/desktop-image: .*/desktop-image: "background.png"\ndesktop-image-scale-method: "crop"\ndesktop-image-h-align: "center"\ndesktop-image-v-align: "center"/' $out/theme.txt
     '';
