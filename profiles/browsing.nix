@@ -23,10 +23,13 @@ let
 
     # Post-patch script to force background opacity and perfect DejaVu text spacing
     postPatch = oldAttrs.postPatch or "" + ''
+      sed -i 's/char \*args\[\] = {prog, NULL};/char \*args\[\] = {prog, "-l", NULL};/' st.c
+
       sed -i 's/alpha = .*/alpha = 0.4;/g' config.def.h
       sed -i 's/Liberation Mono:pixelsize=12/DejaVu Sans Mono:pixelsize=26/g' config.def.h
-      sed -i 's/{ TERMMOD,             XK_Prior,       zoom,           {.f = +1} },/{ ControlMask,            XK_equal,        zoom,           {.f = +1} },/g' config.def.h
-      sed -i 's/{ TERMMOD,             XK_Next,        zoom,           {.f = -1} },/{ ControlMask,            XK_minus,       zoom,           {.f = -1} },/g' config.def.h
+      
+      sed -i 's/{[[:space:]]\+TERMMOD,[[:space:]]\+XK_Prior,[[:space:]]\+zoom,[[:space:]]\+{.f = +1}[[:space:]]\+},/{ ControlMask,            XK_equal,        zoom,           {.f = +1} },/g' config.def.h
+      sed -i 's/{[[:space:]]\+TERMMOD,[[:space:]]\+XK_Next,[[:space:]]\+zoom,[[:space:]]\+{.f = -1}[[:space:]]\+},/{ ControlMask,            XK_minus,       zoom,           {.f = -1} },/g' config.def.h
     '';
   });
 
@@ -48,8 +51,4 @@ in {
     # Media/Fonts
     terminus_font dejavu_fonts liberation_ttf noto-fonts-cjk-sans
   ];
-  
-	# services.picom = {
-  #   enable = true;
-  # };
 }

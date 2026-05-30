@@ -1,36 +1,97 @@
 { config, lib, pkgs, ... }:
 
+let
+  elegant-grub-src = pkgs.fetchFromGitHub {
+    owner = "vinceliuice";
+    repo = "Elegant-grub2-themes";
+    rev = "master";
+    sha256 = "sha256-fbZLWHxnLBrqBrS2MnM2G08HgEM2dmZvitiCERie0Cc="; 
+  };
+
+  my-custom-grub-theme = pkgs.stdenv.mkDerivation {
+    pname = "elegant-grub-custom";
+    version = "1.0";
+    src = elegant-grub-src;
+
+    customWallpaper = ./wallpaper.jpg;
+
+    nativeBuildInputs = [ pkgs.imagemagick ];
+
+    installPhase = ''
+      mkdir -p $out
+
+      cp common/terminus*.pf2 $out/
+      cp common/unifont-16.pf2 $out/
+      cp config/theme-sharp-left-dark-1080p.txt $out/theme.txt
+
+      cp -r assets/assets-icons-dark/icons-dark-1080p $out/icons
+
+      cp assets/assets-other/other-1080p/select_e-forest-dark.png $out/select_e.png
+      cp assets/assets-other/other-1080p/select_c-forest-dark.png $out/select_c.png
+      cp assets/assets-other/other-1080p/select_w-forest-dark.png $out/select_w.png
+      cp assets/assets-other/other-1080p/sharp-left-alt.png $out/info.png
+      cp assets/assets-other/other-1080p/Default.png $out/logo.png
+
+      WIDTH=$(identify -format "%w" "$customWallpaper")
+      HEIGHT=$(identify -format "%h" "$customWallpaper")
+      MIDPOINT=$(( WIDTH / 2 ))
+
+      convert "$customWallpaper" \
+        -draw "fill black rectangle $MIDPOINT,0 $WIDTH,$HEIGHT" \
+        $out/background.png
+
+      convert "$customWallpaper" \
+        -resize "1920x1080^" \
+        -gravity center \
+        -extent "1920x1080" \
+        $out/splash.png
+
+      sed -i 's/desktop-image: .*/desktop-image: "background.png"\ndesktop-image-scale-method: "crop"\ndesktop-image-h-align: "center"\ndesktop-image-v-align: "center"/' $out/theme.txt
+    '';
+  };
+in
 {
   imports = [
     ./hardware-configuration.nix
     ./gpu.nix
   ];
 
-  # Bootloader configuration
-  boot.loader.systemd-boot.enable = false;
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "nodev";
-  boot.loader.grub.efiSupport = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.efi.efiSysMountPoint = "/boot";
+  boot.loader.grub.theme = my-custom-grub-theme;
+  
+  boot.loader.grub.splashImage = "${my-custom-grub-theme}/splash.png";
+  
+  boot.loader.grub.devices = [ "nodev" ];
+  
+  boot.loader.grub.splashMode = "normal";
+
+  boot.loader.grub.gfxmodeEfi = "keep";
+  boot.initrd.kernelModules = [ "i915" "amdgpu" ];
+
   boot.kernelParams = [ 
     "noresume" 
+    "quiet" 
+    "boot.shell_on_fail" 
+    "loglevel=3" 
+    "rd.systemd.show_status=false" 
+    "rd.udev.log_level=3" 
+    "udev.log_priority=3" 
+    "vt.global_cursor_default=0"
   ];
-
+  
+  boot.consoleLogLevel = 0;
+  boot.initrd.verbose = false;
   boot.initrd.systemd.tpm2.enable = false;
+  
   systemd.tpm2.enable = false;
 
-  # Networking
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
 
-  # Enable Flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   services.getty.autologinUser = "lynaten";
-
-  # services.openssh.enable = true;
-  # services.openssh.settings.PermitRootLogin = "yes";
+  services.getty.helpLine = "";
+  services.getty.greetingLine = "";
   
   services.logind.settings = {
     Login = {
@@ -39,7 +100,6 @@
     };
   };
 
-  # Sound Engine
   security.rtkit.enable = true;
   security.sudo.extraConfig = ''
     Defaults env_keep += "HOME"
@@ -56,7 +116,6 @@
     pulse.enable = true;
   };
 
-  # X11 Capabilities
   services.xserver = {
     enable = true;
     xkb.layout = "us";
@@ -69,16 +128,13 @@
     touchpad.naturalScrolling = true;
   };
 
-  # Docker
-  # virtualisation.docker.enable = true;
-
   users.users.lynaten = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" ];
   };
 
   environment.systemPackages = with pkgs; [
-    vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv
+    vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
   ];
   time.timeZone = "Asia/Jakarta";
 
