@@ -22,6 +22,8 @@
       epkgs.cuda-mode
       epkgs.jtsx
       epkgs.ewal
+      epkgs.nix-mode
+      epkgs.company
     ];
   };
 
