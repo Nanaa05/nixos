@@ -113,7 +113,18 @@ in
 
   environment.systemPackages = with pkgs; [
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
+    bibata-cursors
   ];
+
+  services.xserver.displayManager.sessionCommands = ''
+    ${pkgs.xorg.xsetroot}/bin/xsetroot -cursor_name left_ptr
+  '';
+
+  environment.variables = {
+    XCURSOR_THEME = "Bibata-Modern-Ice";
+    XCURSOR_SIZE = "24";
+  };
+  
   time.timeZone = "Asia/Jakarta";
 
   system.stateVersion = "25.11";
