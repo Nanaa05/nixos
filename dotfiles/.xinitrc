@@ -7,6 +7,8 @@ export ENV="$HOME/.profile"
 export XCURSOR_THEME="Bibata-Modern-Ice"
 export XCURSOR_SIZE="24"
 
+setxkbmap -option caps:escape &
+
 xsetroot -cursor_name left_ptr &
 
 xset r rate 300 50 &

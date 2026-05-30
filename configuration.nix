@@ -87,6 +87,8 @@ in
     ./itb-gitlab.crt
   ];
 
+  console.useXkbConfig = true;
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -96,7 +98,10 @@ in
 
   services.xserver = {
     enable = true;
-    xkb.layout = "us";
+    xkb = {
+      layout = "us";
+      options = "caps:escape";
+    };
     displayManager.startx.enable = true;
   };
 
