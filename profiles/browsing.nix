@@ -35,6 +35,8 @@ in {
     my-sxwm
     my-st
     firefox
+    openssl
+    
     # X11 Core / Window Manager Tools
     xinit xrandr xset xinput xkbcomp
     dmenu picom feh xwallpaper maim xclip xdotool wl-clipboard

@@ -43,6 +43,10 @@
 
   # Sound Engine
   security.rtkit.enable = true;
+  security.sudo.extraConfig = ''
+    Defaults env_keep += "HOME"
+  '';
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
