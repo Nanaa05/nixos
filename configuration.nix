@@ -3,7 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./intel-gpu.nix
+    ./gpu.nix
   ];
 
   # Bootloader configuration
