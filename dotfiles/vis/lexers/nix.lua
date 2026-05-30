@@ -3,51 +3,53 @@ local P, S, R = lpeg.P, lpeg.S, lpeg.R
 
 local lex = lexer.new(...)
 
--- 1. Comments
-local line_comment = '#' * lexer.nonnewline^0
-local block_comment = lexer.range('/*', '*/')
-
--- 2. Strings (Standard double-quote & Nix multi-line double-single-quote)
-local simple_string = lexer.range('"')
-local multi_line_string = lexer.range("''")
-
--- 3. Numbers
-local number = lexer.integer
-
--- 4. Native Nix Paths & URIs
-local path = R('az', 'AZ', '09', '..') * S('._+-')^0 * (P('/') * R('az', 'AZ', '09', '..') * S('._+-')^0)^1
-local home_path = P('~') * (P('/') * R('az', 'AZ', '09', '..') * S('._+-')^0)^1
-local search_path = P('<') * R('az', 'AZ', '09', '..') * S('._+-')^0 * (P('/') * R('az', 'AZ', '09', '..') * S('._+-')^0)^0 * P('>')
-
--- 5. Identifiers & Operators
-local identifier = lexer.word
-local operator = S('=!<>+-*&|/?.,:;{}()[]')
-
--- Connect rules to the Lexer Engine
-lex:add_rule('comment', lex:tag(lexer.COMMENT, line_comment + block_comment))
-lex:add_rule('string', lex:tag(lexer.STRING, simple_string + multi_line_string))
-lex:add_rule('number', lex:tag(lexer.NUMBER, number))
-lex:add_rule('path', lex:tag(lexer.INCLUDE, path + home_path + search_path))
-
+-- 1. Keywords, Constants, Builtins
 lex:add_rule('keyword', lex:tag(lexer.KEYWORD, lex:word_match(lexer.KEYWORD)))
-lex:add_rule('constant', lex:tag(lexer.CONSTANT, lex:word_match(lexer.CONSTANT)))
-lex:add_rule('builtin', lex:tag(lexer.FUNCTION, lex:word_match(lexer.FUNCTION)))
+lex:add_rule('constant', lex:tag(lexer.CONSTANT_BUILTIN, lex:word_match(lexer.CONSTANT_BUILTIN)))
+lex:add_rule('builtin', lex:tag(lexer.FUNCTION_BUILTIN, lex:word_match(lexer.FUNCTION_BUILTIN)))
 
-lex:add_rule('identifier', lex:tag(lexer.IDENTIFIER, identifier))
-lex:add_rule('operator', lex:tag(lexer.OPERATOR, operator))
+-- 2. Strings
+local simple_string = lexer.range('"', true)
+local multi_line_string = lexer.range("''")
+lex:add_rule('string', lex:tag(lexer.STRING, simple_string + multi_line_string))
 
--- Keywords Map
+-- 3. Identifiers
+lex:add_rule('identifier', lex:tag(lexer.IDENTIFIER, lexer.word))
+
+-- 4. Comments
+local line_comment = lexer.to_eol('#')
+local block_comment = lexer.range('/*', '*/')
+lex:add_rule('comment', lex:tag(lexer.COMMENT, line_comment + block_comment))
+
+-- 5. Numbers
+lex:add_rule('number', lex:tag(lexer.NUMBER, lexer.number))
+
+-- 6. Native Nix Paths & URIs
+local alpha_num = R('az', 'AZ', '09')
+local path_char = alpha_num + S('._+-')
+local path = path_char^0 * (P('/') * path_char^1)^1
+local home_path = P('~') * (P('/') * path_char^1)^1
+local search_path = P('<') * path_char^1 * (P('/') * path_char^1)^0 * P('>')
+lex:add_rule('path', lex:tag(lexer.PREPROCESSOR, path + home_path + search_path))
+
+-- 7. Operators
+lex:add_rule('operator', lex:tag(lexer.OPERATOR, S('=!<>+-*&|/?.,:;{}()[]')))
+
+-- 8. Fold points
+lex:add_fold_point(lexer.OPERATOR, '{', '}')
+lex:add_fold_point(lexer.OPERATOR, '[', ']')
+lex:add_fold_point(lexer.COMMENT, '/*', '*/')
+
+-- Word lists
 lex:set_word_list(lexer.KEYWORD, {
     'let', 'in', 'if', 'then', 'else', 'with', 'assert', 'inherit', 'rec', 'or'
 })
 
--- Constants Map
-lex:set_word_list(lexer.CONSTANT, {
+lex:set_word_list(lexer.CONSTANT_BUILTIN, {
     'true', 'false', 'null'
 })
 
--- Non-namespaced + core namespaced builtin operators
-lex:set_word_list(lexer.FUNCTION, {
+lex:set_word_list(lexer.FUNCTION_BUILTIN, {
     'abort', 'baseNameOf', 'derivation', 'derivationStrict', 'dirOf', 'fetchGit',
     'fetchMercurial', 'fetchTarball', 'import', 'isNull', 'map', 'mapAttrs', 
     'placeholder', 'removeAttrs', 'scopedImport', 'throw', 'toString', 'builtins',
@@ -64,5 +66,7 @@ lex:set_word_list(lexer.FUNCTION, {
     'toXML', 'trace', 'tryEval', 'typeOf', 'fromTOML', 'bitAnd', 'bitOr', 'bitXor',
     'floor', 'ceil'
 })
+
+lexer.property['scintillua.comment'] = '#'
 
 return lex
