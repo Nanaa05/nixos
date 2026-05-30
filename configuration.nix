@@ -27,13 +27,11 @@
   # Enable Flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Replaces Alpine OpenRC getty definitions for tty1 autologin
   services.getty.autologinUser = "lynaten";
 
   # services.openssh.enable = true;
   # services.openssh.settings.PermitRootLogin = "yes";
   
-  # The fixed, modern structured configuration for logind!
   services.logind.settings = {
     Login = {
       NAutoVTs = 2;
@@ -70,6 +68,7 @@
     mouse.naturalScrolling = true;
     touchpad.naturalScrolling = true;
   };
+
   # Docker
   # virtualisation.docker.enable = true;
 
@@ -79,7 +78,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip
+    vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv
   ];
   time.timeZone = "Asia/Jakarta";
 
