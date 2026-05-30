@@ -46,6 +46,10 @@
   security.sudo.extraConfig = ''
     Defaults env_keep += "HOME"
   '';
+  
+  security.pki.certificateFiles = [
+    ./itb-gitlab.crt
+  ];
 
   services.pipewire = {
     enable = true;
