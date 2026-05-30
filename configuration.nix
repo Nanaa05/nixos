@@ -79,7 +79,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    vim wget curl git pciutils usbutils
+    vim wget curl git pciutils usbutils vis
   ];
   time.timeZone = "Asia/Jakarta";
 

@@ -21,6 +21,7 @@
       ewal
       nix-mode
       company
+      lua-mode
     ];
   };
 
@@ -38,4 +39,6 @@
   home.file.".tmux.conf".text = builtins.readFile ./dotfiles/.tmux.conf;
 
   home.file.".config/sxwmrc".text = builtins.readFile ./dotfiles/sxwmrc;
+
+  home.file.".config/vis".source = ./dotfiles/vis; 
 }

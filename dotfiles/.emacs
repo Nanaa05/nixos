@@ -64,3 +64,4 @@
 (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
 (add-to-list 'auto-mode-alist '("\\.php\\'" . php-mode))
 (add-to-list 'auto-mode-alist '("sxwmrc\\'" . conf-space-mode))
+(add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-mode))
