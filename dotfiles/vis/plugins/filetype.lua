@@ -338,6 +338,9 @@ vis.ftdetect.filetypes = {
 	prisma = {
 		ext = { "%.prisma$" },
 	},
+	nix = {
+		ext = { "%.nix$" },
+	},
 	prolog = {
 		ext = { "%.pl$", "%.pro$", "%.prolog$" },
 	},
