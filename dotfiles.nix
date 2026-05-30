@@ -7,23 +7,23 @@
   programs.emacs = {
     enable = true;
     package = pkgs.emacs-nox;
-    extraPackages = epkgs: [ 
-      epkgs.xclip
-      epkgs.magit
-      epkgs.web-mode
-      epkgs.rust-mode
-      epkgs.go-mode
-      epkgs.php-mode
-      epkgs.yaml-mode
-      epkgs.markdown-mode
-      epkgs.typescript-mode
-      epkgs.kotlin-mode
-      epkgs.dockerfile-mode
-      epkgs.cuda-mode
-      epkgs.jtsx
-      epkgs.ewal
-      epkgs.nix-mode
-      epkgs.company
+    extraPackages = epkgs: with epkgs; [ 
+      xclip
+      magit
+      web-mode
+      rust-mode
+      go-mode
+      php-mode
+      yaml-mode
+      markdown-mode
+      typescript-mode
+      kotlin-mode
+      dockerfile-mode
+      cuda-mode
+      jtsx
+      ewal
+      nix-mode
+      company
     ];
   };
 
