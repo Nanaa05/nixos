@@ -40,5 +40,7 @@
 
   home.file.".config/sxwmrc".text = builtins.readFile ./dotfiles/sxwmrc;
 
-  home.file.".config/vis".source = ./dotfiles/vis; 
+  home.file.".config/vis".source = ./dotfiles/vis;
+
+  home.file.".local/bin".source = ./dotfiles/bin;
 }

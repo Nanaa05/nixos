@@ -14,9 +14,13 @@
       flake = false;
     };
     
-    # Target the EXACT version tag so our patch applies perfectly!
     st-src = {
       url = "git+https://git.suckless.org/st?ref=refs/tags/0.8.5";
+      flake = false;
+    };
+
+    boomer-src = {
+      url = "github:tsoding/boomer";
       flake = false;
     };
   };
@@ -27,6 +31,15 @@
         system = "x86_64-linux";
         specialArgs = { inherit inputs; };
         modules = [
+          ({ ... }: {
+            nixpkgs.overlays = [
+              (final: prev: {
+                stdenv = prev.stdenv // { lib = prev.lib; };
+              })
+              (import "${inputs.boomer-src}/overlay/default.nix")
+            ];
+          })
+
           ./configuration.nix
           ./profiles/browsing.nix
           home-manager.nixosModules.home-manager
@@ -42,6 +55,15 @@
         system = "x86_64-linux";
         specialArgs = { inherit inputs; };
         modules = [
+          ({ ... }: {
+            nixpkgs.overlays = [
+              (final: prev: {
+                stdenv = prev.stdenv // { lib = prev.lib; };
+              })
+              (import "${inputs.boomer-src}/overlay/default.nix")
+            ];
+          })
+
           ./configuration.nix
           ./profiles/developer.nix
           home-manager.nixosModules.home-manager
@@ -57,6 +79,15 @@
         system = "x86_64-linux";
         specialArgs = { inherit inputs; };
         modules = [
+           ({ ... }: {
+            nixpkgs.overlays = [
+              (final: prev: {
+                stdenv = prev.stdenv // { lib = prev.lib; };
+              })
+              (import "${inputs.boomer-src}/overlay/default.nix")
+            ];
+          })
+
           ./configuration.nix
           ./profiles/gaming.nix
           home-manager.nixosModules.home-manager

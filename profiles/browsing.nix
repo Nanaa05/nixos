@@ -44,6 +44,7 @@ in {
   environment.systemPackages = with pkgs; [
     my-sxwm
     my-st
+    boomer
     firefox
     openssl
     

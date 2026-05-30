@@ -24,10 +24,13 @@ mod_key : super
 
 bind : mod + Return : "st"
 bind : mod + e : "pcmanfm"
-bind : mod + b : "qutebrowser"
-bind : mod + alt + b : "dillo"
-bind : mod + shift + b : "st -e w3m"
+bind : mod + b : "firefox"
+# bind : mod + alt + b : "dillo"
+# bind : mod + shift + b : "st -e w3m"
 bind : mod + space : "dmenu_run"
+bind : mod + z : "boomer"
+bind : Print : "maim -s | xclip -selection clipboard -t image/png"
+bind : mod + Print : "/home/lynaten/.local/bin/screenshot.sh"
 
 call : mod + shift + q : close_window
 call : mod + c : centre_window
