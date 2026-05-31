@@ -22,12 +22,10 @@ start_fullscreen        : "mpv", "vlc"
 
 mod_key : super
 
-bind : mod + Return : "st"
+bind : mod + Return : "st -e /bin/sh -c '. ~/.profile && /bin/sh'"
 bind : mod + e : "pcmanfm"
 bind : mod + b : "firefox"
-# bind : mod + alt + b : "dillo"
-# bind : mod + shift + b : "st -e w3m"
-bind : mod + space : "dmenu_run"
+bind : mod + space : "dmenu_run -l 5 -fn 'JetBrains Mono:style=Medium:size=20' -p ' Run > ' -nb '#0a1719' -nf '#c1c5c5' -sb '#154C4E' -sf '#c1c5c5'"
 bind : mod + z : "boomer"
 bind : Print : "maim -s | xclip -selection clipboard -t image/png"
 bind : mod + Print : "/home/lynaten/.local/bin/screenshot.sh"

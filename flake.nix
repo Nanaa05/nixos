@@ -46,6 +46,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.lynaten = import ./dotfiles.nix;
           }
         ];
@@ -70,6 +71,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.lynaten = import ./dotfiles.nix;
           }
         ];
@@ -94,6 +96,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.lynaten = import ./dotfiles.nix;
           }
         ];

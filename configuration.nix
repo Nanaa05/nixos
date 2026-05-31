@@ -43,7 +43,7 @@ in
   boot.loader.grub.splashMode = "normal";
 
   boot.loader.grub.gfxmodeEfi = "keep";
-  boot.initrd.kernelModules = [ "i915" "amdgpu" ];
+  # boot.initrd.kernelModules = [ "i915" "amdgpu" ];
 
   boot.kernelParams = [ 
     "noresume" 
@@ -54,13 +54,30 @@ in
     "rd.udev.log_level=3" 
     "udev.log_priority=3" 
     "vt.global_cursor_default=0"
+    "8250.nr_uarts=0"
+    "vt.default_red=10,21,42,38,71,176,78,193,89,21,42,38,71,176,78,193"
+    "vt.default_grn=23,76,90,107,80,66,157,197,108,76,90,107,80,66,157,197"
+    "vt.default_blu=25,78,79,111,70,55,108,197,110,78,79,111,70,55,108,197"
   ];
   
   boot.consoleLogLevel = 0;
   boot.initrd.verbose = false;
   boot.initrd.systemd.tpm2.enable = false;
+
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="backlight", RUN+="${pkgs.bash}/bin/bash -c 'echo $$(( $$(cat /sys/class/backlight/%k/max_brightness) * 20 / 100 )) > /sys/class/backlight/%k/brightness'"
+  '';
+
+  systemd.services."systemd-backlight@".enable = false;
   
   systemd.tpm2.enable = false;
+  
+  systemd.services."getty@".serviceConfig.ExecStartPre = pkgs.writeScript "tty-theme" ''
+    #!/bin/sh
+    if [ "$TERM" = "linux" ]; then
+      printf '%b' '\e]P00a1719\e]P1154C4E\e]P22A5A4F\e]P3266B6F\e]P4475046\e]P5B04237\e]P64E9D6C\e]P7c1c5c5\e]P8596c6e\e]P9154C4E\e]PA2A5A4F\e]PB266B6F\e]PC475046\e]PDB04237\e]PE4E9D6C\e]PFc1c5c5\ec' > /dev/%I
+    fi
+  '';
 
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
@@ -116,9 +133,51 @@ in
     extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" ];
   };
 
+  fonts.packages = with pkgs; [
+    terminus_font
+  ];
+
+  console = {
+    font = "ter-v32n";
+    packages = with pkgs; [ terminus_font ];
+  };
+
   environment.systemPackages = with pkgs; [
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
     bibata-cursors
+    (pkgs.writeShellScriptBin "font" ''
+      if [ -z "$1" ]; then
+        echo "Usage: font <size>"
+        echo "Available sizes: 12, 14, 16, 18, 20, 22, 24, 28, 32"
+        exit 1
+      fi
+
+      SIZE=$1
+      FONT_PATH="${pkgs.terminus_font}/share/consolefonts/ter-v''${SIZE}n.psf.gz"
+
+      if [ ! -f "$FONT_PATH" ]; then
+        echo "Error: Size $SIZE is not a valid Terminus font variant."
+        exit 1
+      fi
+
+      setfont "$FONT_PATH"
+      echo "TTY font updated to Terminus size $SIZE"
+    '')
+    (pkgs.writeShellScriptBin "light" ''
+      if [ -z "$1" ] || ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -lt 0 ] || [ "$1" -gt 100 ]; then
+        echo "Usage: light <0-100>"
+        exit 1
+      fi
+
+      TARGET=$1
+
+      if [ "$TARGET" -lt 2 ]; then
+        TARGET=2
+      fi
+
+      ${pkgs.brightnessctl}/bin/brightnessctl set "''${TARGET}%" -q
+      echo "Backlight adjusted to ''${TARGET}%"
+    '')
   ];
 
   services.xserver.displayManager.sessionCommands = ''
