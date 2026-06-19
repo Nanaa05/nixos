@@ -4,5 +4,6 @@
 
 hardware-configuration.nix
 gpu.nix
+env.nix
 
 *.bak
