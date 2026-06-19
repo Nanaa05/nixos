@@ -8,4 +8,5 @@
   hzMin = "60";
   
   battery = "BAT0";
+  gpuDriver = "amdgpu";
 }
