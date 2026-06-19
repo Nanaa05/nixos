@@ -20,60 +20,62 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
-    nixosConfigurations = {
-      min = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-        modules = [
-          ({ ... }: {
-            nixpkgs.overlays = [
-              (final: prev: {
-                stdenv = prev.stdenv // { lib = prev.lib; };
-              })
-              (import ./dotfiles/overlay-boomer/default.nix)
-            ];
-          })
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+    let env = import ./env.nix;
+    in {
+      nixosConfigurations = {
+        min = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = [
+            ({ ... }: {
+              nixpkgs.overlays = [
+                (final: prev: {
+                  stdenv = prev.stdenv // { lib = prev.lib; };
+                })
+                (import ./dotfiles/overlay-boomer/default.nix)
+              ];
+            })
 
-          ./configuration.nix
-          ./profiles/min.nix
-          ./profiles/sound.nix
-          ./profiles/no-nvidia.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "backup";
-            home-manager.users.lynaten = import ./dotfiles.nix;
-          }
-        ];
-      };
-      max = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-        modules = [
-          ({ ... }: {
-            nixpkgs.overlays = [
-              (final: prev: {
-                stdenv = prev.stdenv // { lib = prev.lib; };
-              })
-              (import ./dotfiles/overlay-boomer/default.nix)
-            ];
-          })
+            ./configuration.nix
+            ./profiles/min.nix
+            ./profiles/sound.nix
+          ] ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix ++ [
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.lynaten = import ./dotfiles.nix;
+            }
+          ];
+        };
+        max = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = [
+            ({ ... }: {
+              nixpkgs.overlays = [
+                (final: prev: {
+                  stdenv = prev.stdenv // { lib = prev.lib; };
+                })
+                (import ./dotfiles/overlay-boomer/default.nix)
+              ];
+            })
 
-          ./configuration.nix
-          ./profiles/min.nix
-          ./profiles/sound.nix
-          ./profiles/max.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "backup";
-            home-manager.users.lynaten = import ./dotfiles.nix;
-          }
-        ];
+            ./configuration.nix
+            ./profiles/min.nix
+            ./profiles/sound.nix
+            ./profiles/max.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.lynaten = import ./dotfiles.nix;
+            }
+          ];
+        };
       };
     };
-  };
 }
