@@ -46,6 +46,7 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { currentHz = env.hzMin; inherit env; };
               home-manager.users.lynaten = import ./dotfiles.nix;
             }
           ];
@@ -72,6 +73,7 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { currentHz = env.hzMax; inherit env; };
               home-manager.users.lynaten = import ./dotfiles.nix;
             }
           ];

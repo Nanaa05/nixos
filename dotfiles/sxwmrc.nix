@@ -1,4 +1,4 @@
-{ env }:
+{ env, currentHz }:
 ''
 focused_border_colour    : #31827f
 unfocused_border_colour  : #0a1719
@@ -14,7 +14,7 @@ resize_window_amount    : 50
 snap_distance           : 5
 
 # TODO: Dynamic Motion Throttle
-motion_throttle         : ${env.hzMax}
+motion_throttle         : ${currentHz}
 should_float            : "pcmanfm", "obs"
 new_win_focus           : true
 warp_cursor             : true
