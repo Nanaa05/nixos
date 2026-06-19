@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "boomer-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1779585518,
-        "narHash": "sha256-GxrPoDU1vj0SGuji/vinRu7WThY/J7LTdIdrOG4WOwo=",
-        "owner": "tsoding",
-        "repo": "boomer",
-        "rev": "97189f7ef07859a86420ef11258ca29527774d9c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tsoding",
-        "repo": "boomer",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -54,7 +38,6 @@
     },
     "root": {
       "inputs": {
-        "boomer-src": "boomer-src",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "st-src": "st-src",

@@ -1,5 +1,6 @@
 { config, lib, pkgs, ... }:
 let
+  env = import ./env.nix;
   my-custom-grub-theme = pkgs.stdenv.mkDerivation {
     pname = "elegant-grub-custom";
     version = "1.0";
@@ -18,11 +19,13 @@ let
       cp assets/assets-other/other-1080p/sharp-left-alt.png $out/info.png
 
       cp ${./background.png} $out/background.png
+
+      # TODO: Dynamic Resize Value
       convert ${./wallpaper.jpg} \
-        -resize "1920x1080^" \
+        -resize "${env.resNative}^" \
         -gravity center \
-        -extent "1920x1080" \
-        $out/splash.png      
+        -extent "${env.resNative}" \
+        $out/splash.png
 
       sed -i 's/desktop-image: .*/desktop-image: "background.png"\ndesktop-image-scale-method: "crop"\ndesktop-image-h-align: "center"\ndesktop-image-v-align: "center"/' $out/theme.txt
     '';
@@ -31,20 +34,19 @@ in
 {
   imports = [
     ./hardware-configuration.nix
-    ./gpu.nix
   ];
+
+  
 
   boot.loader.grub.theme = my-custom-grub-theme;
   
   boot.loader.grub.splashImage = "${my-custom-grub-theme}/splash.png";
-  
-  boot.loader.grub.devices = [ "nodev" ];
-  
   boot.loader.grub.splashMode = "normal";
-
-  boot.loader.grub.gfxmodeEfi = "keep";
-  # boot.initrd.kernelModules = [ "i915" "amdgpu" ];
-
+  boot.loader.grub.efiSupport = true; 
+  boot.loader.grub.devices = [ "nodev" ];
+  boot.loader.grub.gfxmodeEfi = "auto"; 
+  boot.loader.grub.gfxmodeBios = "auto";  
+  
   boot.kernelParams = [ 
     "noresume" 
     "quiet" 
@@ -106,32 +108,23 @@ in
 
   console.useXkbConfig = true;
 
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
-
-  services.xserver = {
-    enable = true;
-    xkb = {
-      layout = "us";
-      options = "caps:escape";
-    };
-    displayManager.startx.enable = true;
-  };
-
   services.libinput = {
     enable = true;
-    mouse.naturalScrolling = true;
+    mouse.naturalScrolling = false;
     touchpad.naturalScrolling = true;
+    touchpad.tappingDragLock = false;
   };
+
+  # services.openssh = {
+  #   enable = true;
+  # };
 
   users.users.lynaten = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" ];
   };
+
+  nix.settings.trusted-users = [ "root" "@wheel" "lynaten" ];
 
   fonts.packages = with pkgs; [
     terminus_font
@@ -141,11 +134,24 @@ in
     font = "ter-v32n";
     packages = with pkgs; [ terminus_font ];
   };
+  
+  nixpkgs.config.allowUnfree = true;
+
+  hardware.graphics = {
+    enable = true;
+  };
 
   environment.systemPackages = with pkgs; [
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
     bibata-cursors
-    (pkgs.writeShellScriptBin "font" ''
+
+    # TODO: Dynamic Battery Name
+    (pkgs.writeShellScriptBin "power" ''
+    cat /sys/class/power_supply/${env.battery}/capacity
+    '')
+    
+    
+    (pkgs.writeShellScriptBin "font" '' 
       if [ -z "$1" ]; then
         echo "Usage: font <size>"
         echo "Available sizes: 12, 14, 16, 18, 20, 22, 24, 28, 32"
@@ -179,15 +185,6 @@ in
       echo "Backlight adjusted to ''${TARGET}%"
     '')
   ];
-
-  services.xserver.displayManager.sessionCommands = ''
-    ${pkgs.xorg.xsetroot}/bin/xsetroot -cursor_name left_ptr
-  '';
-
-  environment.variables = {
-    XCURSOR_THEME = "Bibata-Modern-Ice";
-    XCURSOR_SIZE = "24";
-  };
   
   time.timeZone = "Asia/Jakarta";
 

@@ -83,7 +83,7 @@ char *termname = "st-256color";
 unsigned int tabspaces = 8;
 
 /* Applied Sed: Injected alpha = 0.4 parameter required by the st-alpha patch */
-float alpha = 0.4;
+float alpha = 0.8;
 
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {

@@ -1,3 +1,5 @@
+{ env }:
+''
 focused_border_colour    : #31827f
 unfocused_border_colour  : #0a1719
 swap_border_colour       : #eeeeee
@@ -10,7 +12,9 @@ resize_stack_amount     : 20
 move_window_amount      : 50
 resize_window_amount    : 50
 snap_distance           : 5
-motion_throttle         : 60
+
+# TODO: Dynamic Motion Throttle
+motion_throttle         : ${env.hzMax}
 should_float            : "pcmanfm", "obs"
 new_win_focus           : true
 warp_cursor             : true
@@ -24,14 +28,15 @@ mod_key : super
 
 bind : mod + Return : "st -e /bin/sh -c '. ~/.profile && /bin/sh'"
 bind : mod + e : "pcmanfm"
-bind : mod + b : "firefox"
 bind : mod + space : "dmenu_run -l 5 -fn 'JetBrains Mono:style=Medium:size=20' -p ' Run > ' -nb '#0a1719' -nf '#c1c5c5' -sb '#154C4E' -sf '#c1c5c5'"
 bind : mod + z : "boomer"
 bind : Print : "maim -s | xclip -selection clipboard -t image/png"
 bind : mod + Print : "/home/lynaten/.local/bin/screenshot.sh"
-bind : mod + F1 : "xrandr --output eDP-1 --auto --primary --output HDMI-1 --auto --right-of eDP-1"
-bind : mod + F2 : "xrandr --output eDP-1 --mode 1920x1080 --output HDMI-1 --mode 1920x1080 --same-as eDP-1"
-bind : mod + F3 : "xrandr --output HDMI-1 --off --output eDP-1 --auto --primary"
+
+# TODO: Dynamic Script: Output Names
+bind : mod + F1 : "xrandr --output ${env.monitorPrimary} --auto --primary --output ${env.monitorExternal} --auto --right-of ${env.monitorPrimary}"
+bind : mod + F2 : "xrandr --output ${env.monitorPrimary} --mode ${env.resFHD} --output ${env.monitorExternal} --mode ${env.resFHD} --same-as ${env.monitorPrimary}"
+bind : mod + F3 : "xrandr --output ${env.monitorExternal} --off --output ${env.monitorPrimary} --auto --primary"
 
 call : mod + shift + q : close_window
 call : mod + c : centre_window
@@ -104,3 +109,4 @@ workspace : mod + 8          : move 8
 workspace : mod + shift + 8  : swap 8
 workspace : mod + 9          : move 9
 workspace : mod + shift + 9  : swap 9
+''

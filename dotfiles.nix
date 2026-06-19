@@ -1,4 +1,7 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+let
+  env = import ./env.nix;
+in {
   home.stateVersion = "24.05";
 
   programs.emacs = {
@@ -22,6 +25,9 @@
       nix-mode
       company
       lua-mode
+      nim-mode
+      glsl-mode
+      cmake-mode
     ];
   };
 
@@ -33,8 +39,9 @@
   home.file.".config/picom.conf".text = builtins.readFile ./dotfiles/picom.conf;
   home.file.".profile".text = builtins.readFile ./dotfiles/.profile;
   home.file.".tmux.conf".text = builtins.readFile ./dotfiles/.tmux.conf;
-  home.file.".config/sxwmrc".text = builtins.readFile ./dotfiles/sxwmrc;
+  home.file.".config/sxwmrc".text = import ./dotfiles/sxwmrc.nix { inherit env; };
   home.file.".config/vis".source = ./dotfiles/vis;
   home.file.".local/bin".source = ./dotfiles/bin;
   home.file.".config/spotify-player".source = ./dotfiles/spotify-player;
+  home.file.".config/boomer".source = ./dotfiles/boomer;
 }

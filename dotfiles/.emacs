@@ -4,7 +4,6 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
-;; X11 Clipboard configuration hooks
 (with-eval-after-load 'xclip
   (setq xclip-method 'xclip)
   (setq xclip-program "xclip"))
@@ -56,6 +55,8 @@
  '(warning-suppress-log-types '((native-compiler))))
 (custom-set-faces
  )
+
+(add-hook 'after-init-hook 'global-company-mode)
 
 ;; Language major mode bindings
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))

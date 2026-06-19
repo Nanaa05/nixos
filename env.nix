@@ -1,0 +1,11 @@
+{
+  monitorPrimary = "eDP";
+  monitorExternal = "HDMI-A-0";
+  resNative = "2880x1620";
+  resFHD = "1920x1080";
+  
+  hzMax = "120";
+  hzMin = "60";
+  
+  battery = "BAT0";
+}
