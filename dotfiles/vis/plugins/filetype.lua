@@ -43,7 +43,7 @@ vis.ftdetect.filetypes = {
 	},
 	bash = {
 		utility = { "^[db]ash$", "^sh$","^t?csh$","^zsh$" },
-		ext = { "%.bash$", "%.csh$", "%.sh$", "%.zsh$" ,"^APKBUILD$", "%.ebuild$", "^.bashrc$", "^.bash_profile$" , "^.profile$", "^sxwmrc$"},
+		ext = { "%.bash$", "%.csh$", "%.sh$", "%.zsh$" ,"^APKBUILD$", "%.ebuild$", "^.bashrc$", "^.bash_profile$" , "^.profile$", "^sxwmrc$", "^%.env$"}, 
 		mime = { "text/x-shellscript", "application/x-shellscript" },
 	},
 	batch = {

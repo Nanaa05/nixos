@@ -40,6 +40,7 @@
             ./configuration.nix
             ./profiles/min.nix
             ./profiles/sound.nix
+            ./profiles/miracast.nix
           ] ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix ++ [
             home-manager.nixosModules.home-manager
             {

@@ -42,4 +42,5 @@
   home.file.".local/bin".source = ./dotfiles/bin;
   home.file.".config/spotify-player".source = ./dotfiles/spotify-player;
   home.file.".config/boomer".source = ./dotfiles/boomer;
+  home.file.".config/devenv".source = ./dotfiles/devenv;
 }

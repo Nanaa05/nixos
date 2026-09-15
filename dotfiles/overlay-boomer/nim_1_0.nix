@@ -48,7 +48,7 @@ stdenv.mkDerivation rec {
     ./bin/nim c koch
     ./koch boot  -d:release \
                  -d:useGnuReadline \
-                 ${lib.optionals (stdenv.isDarwin || stdenv.isLinux) "-d:nativeStacktrace"}
+                 ${lib.optionals (stdenv.hostPlatform.isDarwin || stdenv.hostPlatform.isLinux) "-d:nativeStacktrace"}
     ./koch tools -d:release
     runHook postBuild
   '';
@@ -64,7 +64,7 @@ stdenv.mkDerivation rec {
       ${disableTest} ./tests/system/t7894.nim
       # requires network access (not available in the build container)
       ${disableTest} ./tests/stdlib/thttpclient.nim
-    '' + lib.optionalString stdenv.isAarch64 ''
+    '' + lib.optionalString stdenv.hostPlatform.isAarch64 ''
       # supposedly broken on aarch64
       ${disableStdLibTest} ./lib/pure/stats.nim
       # reported upstream: https://github.com/nim-lang/Nim/issues/11463

@@ -38,7 +38,7 @@ in {
     my-st
     boomer
     firefox
-    discord
+    # discord
     openssl
     spotify-player
     xinit xrandr xset xinput xkbcomp xwallpaper
@@ -46,6 +46,8 @@ in {
     brightnessctl pcmanfm htop tmux fastfetch zip
     pavucontrol mpv yt-dlp emacs-nox
     terminus_font dejavu_fonts liberation_ttf noto-fonts-cjk-sans
+    vscode
+    krita
   ];
 
   environment.variables = {
