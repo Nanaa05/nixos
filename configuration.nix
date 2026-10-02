@@ -85,6 +85,7 @@ in
   networking.networkmanager.enable = true;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.package = pkgs.lix;
 
   services.getty.autologinUser = "lynaten";
   services.getty.helpLine = "";
@@ -115,9 +116,9 @@ in
     touchpad.tappingDragLock = false;
   };
 
-  # services.openssh = {
-  #   enable = true;
-  # };
+  services.openssh = {
+    enable = true;
+  };
 
   # services.timesyncd = {
   #   enable = true;

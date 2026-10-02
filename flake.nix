@@ -18,6 +18,11 @@
       url = "git+https://git.suckless.org/st?ref=refs/tags/0.8.5";
       flake = false;
     };
+
+    spotifast = {
+      url = "github:crmne/spotifast";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
@@ -41,6 +46,8 @@
             ./profiles/min.nix
             ./profiles/sound.nix
             ./profiles/miracast.nix
+            ./profiles/bluetooth.nix
+            ./profiles/spotifast.nix
           ] ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix ++ [
             home-manager.nixosModules.home-manager
             {
@@ -69,6 +76,8 @@
             ./profiles/min.nix
             ./profiles/sound.nix
             ./profiles/max.nix
+            ./profiles/bluetooth.nix
+            ./profiles/spotifast.nix
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;

@@ -13,4 +13,3 @@
   systemd.user.sockets.pipewire.partOf = [ "picom.service" ];
   systemd.user.sockets.pipewire-pulse.partOf = [ "picom.service" ];
 }
-  

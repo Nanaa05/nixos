@@ -31,7 +31,7 @@
   # XDG Portals
   xdg.portal = {
     enable = true;
-    xdgOpenUsePortal = true;
+    xdgOpenUsePortal = false;
     
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk

@@ -1,4 +1,4 @@
-{ pkgs, env, currentHz, ... }:
+{ pkgs, env, currentHz, config, ... }:
 {
   home.stateVersion = "24.05";
 
@@ -29,7 +29,9 @@
     ];
   };
 
-  home.file.".emacs".text = builtins.readFile ./dotfiles/.emacs;
+  # home.file.".emacs".text = builtins.readFile ./dotfiles/.emacs;
+  home.file.".emacs".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/dotfiles/.emacs";
   home.file.".xinitrc" = {
     executable = true;
     text = builtins.readFile ./dotfiles/.xinitrc;
