@@ -56,7 +56,7 @@
 (custom-set-faces
  )
 
-(add-hook 'after-init-hook 'global-company-mode)
+(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
 ;; Language major mode bindings
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))

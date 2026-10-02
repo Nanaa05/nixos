@@ -38,9 +38,15 @@ in {
     my-st
     boomer
     firefox
+    zoom-us
     discord
     openssl
     spotify-player
+    krita
+    codex
+    codex-acp
+    claude-code
+    claude-agent-acp
     xinit xrandr xset xinput xkbcomp xwallpaper
     dmenu feh maim xclip xdotool wl-clipboard
     brightnessctl pcmanfm htop tmux fastfetch zip

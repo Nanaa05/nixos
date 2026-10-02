@@ -1,6 +1,54 @@
 { config, lib, pkgs, ... }:
 let
   env = import ./env.nix;
+  fontCommand = pkgs.writeShellScriptBin "font" ''
+    if [ "$#" -eq 0 ]; then
+      ${pkgs.kbd}/bin/showconsolefont -i \
+        | ${pkgs.gawk}/bin/awk -F ': *' '/Font height:/ { print $2; exit }'
+      exit 0
+    fi
+
+    if [ "$#" -ne 1 ] || ! [[ "$1" =~ ^(12|14|16|18|20|22|24|28|32)$ ]]; then
+      echo "Usage: font <12|14|16|18|20|22|24|28|32>"
+      exit 1
+    fi
+
+    SIZE=$1
+    FONT_PATH="${pkgs.terminus_font}/share/consolefonts/ter-v''${SIZE}n.psf.gz"
+
+    ${pkgs.kbd}/bin/setfont "$FONT_PATH"
+    echo "TTY font adjusted to $SIZE"
+  '';
+  fontControls = pkgs.symlinkJoin {
+    name = "font-controls";
+    paths = [ fontCommand ];
+    postBuild = ''ln -s "$out/bin/font" "$out/bin/fnt"'';
+  };
+  lightCommand = pkgs.writeShellScriptBin "light" ''
+    if [ "$#" -eq 0 ]; then
+      ${pkgs.brightnessctl}/bin/brightnessctl -m | ${pkgs.coreutils}/bin/cut -d, -f4
+      exit 0
+    fi
+
+    if [ "$#" -ne 1 ] || ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -gt 100 ]; then
+      echo "Usage: light <0-100>"
+      exit 1
+    fi
+
+    TARGET=$1
+
+    if [ "$TARGET" -lt 2 ]; then
+      TARGET=2
+    fi
+
+    ${pkgs.brightnessctl}/bin/brightnessctl set "''${TARGET}%" -q
+    echo "Backlight adjusted to ''${TARGET}%"
+  '';
+  lightControls = pkgs.symlinkJoin {
+    name = "light-controls";
+    paths = [ lightCommand ];
+    postBuild = ''ln -s "$out/bin/light" "$out/bin/lit"'';
+  };
   my-custom-grub-theme = pkgs.stdenv.mkDerivation {
     pname = "elegant-grub-custom";
     version = "1.0";
@@ -82,7 +130,6 @@ in
   '';
 
   networking.hostName = "nixos";
-  networking.networkmanager.enable = true;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
@@ -143,7 +190,7 @@ in
 
   environment.systemPackages = with pkgs; [
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
-    bibata-cursors
+    bibata-cursors jq
 
     # TODO: Dynamic Battery Name
     (pkgs.writeShellScriptBin "power" ''
@@ -151,39 +198,8 @@ in
     '')
     
     
-    (pkgs.writeShellScriptBin "font" '' 
-      if [ -z "$1" ]; then
-        echo "Usage: font <size>"
-        echo "Available sizes: 12, 14, 16, 18, 20, 22, 24, 28, 32"
-        exit 1
-      fi
-
-      SIZE=$1
-      FONT_PATH="${pkgs.terminus_font}/share/consolefonts/ter-v''${SIZE}n.psf.gz"
-
-      if [ ! -f "$FONT_PATH" ]; then
-        echo "Error: Size $SIZE is not a valid Terminus font variant."
-        exit 1
-      fi
-
-      setfont "$FONT_PATH"
-      echo "TTY font updated to Terminus size $SIZE"
-    '')
-    (pkgs.writeShellScriptBin "light" ''
-      if [ -z "$1" ] || ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -lt 0 ] || [ "$1" -gt 100 ]; then
-        echo "Usage: light <0-100>"
-        exit 1
-      fi
-
-      TARGET=$1
-
-      if [ "$TARGET" -lt 2 ]; then
-        TARGET=2
-      fi
-
-      ${pkgs.brightnessctl}/bin/brightnessctl set "''${TARGET}%" -q
-      echo "Backlight adjusted to ''${TARGET}%"
-    '')
+    fontControls
+    lightControls
   ];
   
   time.timeZone = "Asia/Jakarta";

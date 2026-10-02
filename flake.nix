@@ -25,9 +25,9 @@
     in {
       nixosConfigurations = {
         min = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
           specialArgs = { inherit inputs; };
           modules = [
+            { nixpkgs.hostPlatform = "x86_64-linux"; }
             ({ ... }: {
               nixpkgs.overlays = [
                 (final: prev: {
@@ -40,6 +40,7 @@
             ./configuration.nix
             ./profiles/min.nix
             ./profiles/sound.nix
+            ./profiles/power-save.nix
           ] ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix ++ [
             home-manager.nixosModules.home-manager
             {
@@ -52,9 +53,9 @@
           ];
         };
         max = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
           specialArgs = { inherit inputs; };
           modules = [
+            { nixpkgs.hostPlatform = "x86_64-linux"; }
             ({ ... }: {
               nixpkgs.overlays = [
                 (final: prev: {
@@ -67,7 +68,9 @@
             ./configuration.nix
             ./profiles/min.nix
             ./profiles/sound.nix
-            ./profiles/max.nix
+            ./profiles/internet.nix
+            ./profiles/bluetooth.nix
+            # ./profiles/max.nix
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;

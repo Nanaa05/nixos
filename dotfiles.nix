@@ -26,6 +26,7 @@
       nim-mode
       glsl-mode
       cmake-mode
+      agent-shell
     ];
   };
 
