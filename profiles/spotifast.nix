@@ -1,8 +1,7 @@
 { pkgs, inputs, ... }:
 {
-  services.gnome.gnome-keyring.enable = true;
-
   environment.systemPackages = [
+    pkgs.seahorse
     inputs.spotifast.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

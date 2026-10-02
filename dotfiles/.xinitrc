@@ -1,4 +1,6 @@
 #!/bin/sh
+systemctl --user start x11-setup.service
+
 exec sxwm
 
 # if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then

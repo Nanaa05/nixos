@@ -20,7 +20,7 @@ in {
         # TODO: Dynamic Hz Max
         ${pkgs.xrandr}/bin/xrandr --output $MONITOR --mode ${env.resFHD} --rate ${env.hzMax}
       ''}";
-      ExecStart = lib.mkForce "${pkgs.picom}/bin/picom --config /etc/nixos/dotfiles/picom.conf";
+      ExecStart = lib.mkForce "${pkgs.picom}/bin/picom --config /home/lynaten/nixos/dotfiles/picom.conf";
     };
   };
 }

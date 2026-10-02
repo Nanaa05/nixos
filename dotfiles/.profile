@@ -5,8 +5,6 @@ alias doas='sudo'
 export PS1="\[\033[1;32m\]\w\[\033[0m\]\n$ "
 unset SSH_ASKPASS
 
-wallpaper="/etc/nixos/wallpaper.jpg"
-
 background='#0a1719'
 foreground='#c1c5c5'
 cursor='#c1c5c5'
@@ -48,7 +46,3 @@ fi
 #         chmod 700 "$XDG_RUNTIME_DIR"
 #     fi
 # fi
-
-if [ -z "$DISPLAY" ] && [ "$(tty 2>/dev/null)" = "/dev/tty1" ]; then
-    startx
-fi

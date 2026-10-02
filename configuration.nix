@@ -131,12 +131,24 @@ in
 
   networking.hostName = "nixos";
 
+  i18n.defaultLocale = "en_US.UTF-8";
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.package = pkgs.lix;
 
-  services.getty.autologinUser = "lynaten";
   services.getty.helpLine = "";
   services.getty.greetingLine = "";
+
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd startx";
+      user = "greeter";
+    };
+  };
+
+  services.gnome.gnome-keyring.enable = true;
+  security.pam.services.greetd.enableGnomeKeyring = true;
   
   services.logind.settings = {
     Login = {

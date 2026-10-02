@@ -32,7 +32,7 @@
 
   # home.file.".emacs".text = builtins.readFile ./dotfiles/.emacs;
   home.file.".emacs".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/dotfiles/.emacs";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos/dotfiles/.emacs";
   home.file.".xinitrc" = {
     executable = true;
     text = builtins.readFile ./dotfiles/.xinitrc;

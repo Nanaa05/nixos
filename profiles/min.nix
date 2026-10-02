@@ -64,22 +64,13 @@ in {
   };
 
   systemd.user.services.x11-setup = {
-    after = [ "default.target" ];
-    wantedBy = [ "default.target" ];
-
-    unitConfig = { StartLimitIntervalSec = 0; };
-
     serviceConfig = {
       Type = "oneshot";
-      RemainAfterExit = true;
       Environment = lib.mkForce [ "DISPLAY=:0" ];
-      Restart = "on-failure";
-      RestartSec = 2;
       ExecStart = "${pkgs.writeShellScript "x11-setup" ''
         export XAUTHORITY=$HOME/.Xauthority
         while ! ${pkgs.xset}/bin/xset q >/dev/null 2>&1; do sleep 0.01; done
         ${pkgs.systemd}/bin/systemctl --user import-environment DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
-        ${pkgs.systemd}/bin/systemctl --user start graphical-session.target
 
         MONITOR=$(${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep " connected" | ${pkgs.coreutils}/bin/cut -d ' ' -f1)
 
@@ -93,7 +84,7 @@ in {
         ${pkgs.xsetroot}/bin/xsetroot -cursor_name left_ptr &
         ${pkgs.xset}/bin/xset r rate 300 50 &
         ${pkgs.xset}/bin/xset s off -dpms &
-        ${pkgs.xwallpaper}/bin/xwallpaper --zoom /etc/nixos/wallpaper.jpg &
+        ${pkgs.xwallpaper}/bin/xwallpaper --zoom /home/lynaten/nixos/wallpaper.jpg
       ''}";
     };
   };

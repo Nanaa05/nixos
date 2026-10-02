@@ -2,7 +2,7 @@
 ''
 # ==== DISPLAY & BACKGROUND ====
 # (Sway handles this natively, no need for xwallpaper)
-output * bg /etc/nixos/wallpaper.jpg fill
+output * bg /home/lynaten/nixos/wallpaper.jpg fill
 
 # ==== STYLING & GAPS ====
 gaps inner 30
