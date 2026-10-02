@@ -32,24 +32,25 @@
 (setq initial-scratch-message "")
 
 (delete-selection-mode t)
+(setq-default truncate-lines t)
 
 (global-unset-key (kbd "C-z"))
 (global-set-key (kbd "C-x C-z") 'suspend-frame)
 
-(defvar my-keys-minor-mode-map
+(defvar custom-keys-minor-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-q") 'delete-backward-char)
     (define-key map (kbd "M-q") 'backward-kill-word)
     map)
-  "Keymap for my-keys-minor-mode.")
+  "Keymap for custom-keys-minor-mode.")
 
-(define-minor-mode my-keys-minor-mode
+(define-minor-mode custom-keys-minor-mode
   "This string is REQUIRED by Emacs, do not delete it."
   :init-value t
-  :lighter " my-keys"
+  :lighter " custom-keys"
   :global t)
 
-(my-keys-minor-mode 1)
+(custom-keys-minor-mode 1)
 (custom-set-variables
  '(send-mail-function 'mailclient-send-it)
  '(warning-suppress-log-types '((native-compiler))))
@@ -57,6 +58,10 @@
  )
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
+
+(defun reload-config ()
+      (interactive)
+      (load-file user-init-file))
 
 ;; Language major mode bindings
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))
@@ -66,3 +71,4 @@
 (add-to-list 'auto-mode-alist '("\\.php\\'" . php-mode))
 (add-to-list 'auto-mode-alist '("sxwmrc\\'" . conf-space-mode))
 (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-mode))
+(add-to-list 'auto-mode-alist '("\\.mako\\'" . web-mode))

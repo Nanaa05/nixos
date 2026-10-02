@@ -1,0 +1,6 @@
+version: 1
+shell:
+  prompt_prefix: false
+tui:
+  statusline:
+    enabled: false

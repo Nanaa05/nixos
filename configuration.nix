@@ -132,6 +132,7 @@ in
   networking.hostName = "nixos";
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.package = pkgs.lix;
 
   services.getty.autologinUser = "lynaten";
   services.getty.helpLine = "";
@@ -162,13 +163,18 @@ in
     touchpad.tappingDragLock = false;
   };
 
-  # services.openssh = {
+  services.openssh = {
+    enable = true;
+  };
+
+  # services.timesyncd = {
   #   enable = true;
+  #   servers = [ "time.cloudflare.com" "time.google.com" ];
   # };
 
   users.users.lynaten = {
     isNormalUser = true;
-    extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" "lp" "scanner" "docker"];
   };
 
   nix.settings.trusted-users = [ "root" "@wheel" "lynaten" ];
@@ -188,9 +194,17 @@ in
     enable = true;
   };
 
+  # Enable CUPS
+  services.printing.enable = true;
+
+  # Add the HP driver with the proprietary plugin
+  services.printing.drivers = [ pkgs.hplipWithPlugin ];
+  
+  virtualisation.docker.enable = true;
+  
   environment.systemPackages = with pkgs; [
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
-    bibata-cursors jq
+    bibata-cursors jq python3 python313Packages.pip
 
     # TODO: Dynamic Battery Name
     (pkgs.writeShellScriptBin "power" ''

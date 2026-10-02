@@ -52,10 +52,13 @@ in {
     brightnessctl pcmanfm htop tmux fastfetch zip
     pavucontrol mpv yt-dlp emacs-nox
     terminus_font dejavu_fonts liberation_ttf noto-fonts-cjk-sans
+    vscode
+    krita
   ];
 
   environment.variables = {
     ENV = "$HOME/.profile";
+    BROWSER = "firefox";
     XCURSOR_THEME = "Bibata-Modern-Ice";
     XCURSOR_SIZE = "24";
   };
@@ -76,6 +79,7 @@ in {
         export XAUTHORITY=$HOME/.Xauthority
         while ! ${pkgs.xset}/bin/xset q >/dev/null 2>&1; do sleep 0.01; done
         ${pkgs.systemd}/bin/systemctl --user import-environment DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
+        ${pkgs.systemd}/bin/systemctl --user start graphical-session.target
 
         MONITOR=$(${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep " connected" | ${pkgs.coreutils}/bin/cut -d ' ' -f1)
 
