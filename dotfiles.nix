@@ -31,6 +31,24 @@
   };
 
   # home.file.".emacs".text = builtins.readFile ./dotfiles/.emacs;
+  home.file.".config/opencode/opencode.json".text = builtins.toJSON {
+    "$schema" = "https://opencode.ai/config.json";
+    provider = {
+      openrouter.options.apiKey = "{file:/run/secrets/openrouter-api-key}";
+      kilo = {
+        npm = "@ai-sdk/openai-compatible";
+        name = "Kilo Gateway";
+        options = {
+          baseURL = "https://api.kilo.ai/api/gateway";
+          apiKey = "{file:/run/secrets/kilo-api-key}";
+        };
+        models = {
+          "kilo-auto/free".name = "Kilo Auto Free";
+        };
+      };
+    };
+    model = "openrouter/openrouter/free";
+  };
   home.file.".emacs".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos/dotfiles/.emacs";
   home.file.".xinitrc" = {

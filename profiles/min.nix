@@ -47,6 +47,7 @@ in {
     codex-acp
     claude-code
     claude-agent-acp
+    opencode
     xinit xrandr xset xinput xkbcomp xwallpaper
     dmenu feh maim xclip xdotool wl-clipboard
     brightnessctl pcmanfm htop tmux fastfetch zip

@@ -40,9 +40,4 @@ in
 
   environment.systemPackages = [ volumeControls ];
 
-  systemd.user.services.pipewire.partOf = [ "picom.service" ];
-  systemd.user.services.pipewire-pulse.partOf = [ "picom.service" ];
-  systemd.user.services.wireplumber.partOf = [ "picom.service" ];
-  systemd.user.sockets.pipewire.partOf = [ "picom.service" ];
-  systemd.user.sockets.pipewire-pulse.partOf = [ "picom.service" ];
 }

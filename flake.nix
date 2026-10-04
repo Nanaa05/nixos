@@ -19,6 +19,11 @@
       flake = false;
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     spotifast = {
       url = "github:crmne/spotifast";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -45,8 +50,8 @@
             ./configuration.nix
             ./profiles/min.nix
             ./profiles/sound.nix
+            ./profiles/secrets.nix
           ] ++ extraModules
-            ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix
             ++ [
               home-manager.nixosModules.home-manager
               {
@@ -68,11 +73,13 @@
       nixosConfigurations = {
         save = mkSystem {
           currentHz = env.hzMin;
-          extraModules = [ ./profiles/power-save.nix ];
+          extraModules = [ ./profiles/power-save.nix ]
+            ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix;
         };
         min = mkSystem {
           currentHz = env.hzMin;
-          extraModules = connectedModules;
+          extraModules = connectedModules
+            ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix;
         };
         max = mkSystem {
           currentHz = env.hzMax;
