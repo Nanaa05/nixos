@@ -61,6 +61,7 @@ in {
   environment.variables = {
     ENV = "$HOME/.profile";
     BROWSER = "firefox";
+    EDITOR = "emacs";
     XCURSOR_THEME = "Bibata-Modern-Ice";
     XCURSOR_SIZE = "24";
   };
