@@ -11,9 +11,11 @@ Lynaten's multi-profile NixOS flake.
 API keys (OpenRouter, Kilo) live encrypted in `secrets/secrets.yaml` and are decrypted at boot to `/run/secrets/<name>`. OpenCode reads them via `{file:/run/secrets/...}` in `dotfiles.nix`, so nothing secret enters the nix store. Declared in `profiles/secrets.nix`; recipients in `.sops.yaml`.
 
 ### 1. Create this device's age key
+(`sops` and `age` are installed system-wide via `profiles/min.nix`.)
+
 ```sh
 sudo mkdir -p /var/lib/sops-nix
-nix shell nixpkgs#age -c sudo age-keygen -o /var/lib/sops-nix/key.txt
+sudo age-keygen -o /var/lib/sops-nix/key.txt
 sudo chmod 600 /var/lib/sops-nix/key.txt
 sudo grep 'public key' /var/lib/sops-nix/key.txt   # prints age1...
 ```
@@ -23,7 +25,7 @@ To edit secrets as your normal user, copy the key to `~/.config/sops/age/keys.tx
 
 ### 2. Add or edit secrets
 ```sh
-nix shell nixpkgs#sops -c sops secrets/secrets.yaml
+sops secrets/secrets.yaml
 ```
 This opens `$EDITOR` on plain YAML (the first run creates the file):
 ```yaml

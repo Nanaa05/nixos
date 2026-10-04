@@ -48,6 +48,7 @@ in {
     claude-code
     claude-agent-acp
     opencode
+    sops age
     xinit xrandr xset xinput xkbcomp xwallpaper
     dmenu feh maim xclip xdotool wl-clipboard
     brightnessctl pcmanfm htop tmux fastfetch zip
