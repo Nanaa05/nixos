@@ -5,7 +5,10 @@ in {
   imports = [ inputs.sops-nix.nixosModules.sops ];
 
   sops = {
-    age.keyFile = "/var/lib/sops-nix/key.txt";
+    # personal key only (create it once, see README): used by you (sops finds it by itself) and by sops-nix at boot
+    age.keyFile = "/home/lynaten/.config/sops/age/keys.txt";
+
+    # don't load extra keys
     gnupg.sshKeyPaths = [ ];
     defaultSopsFile = secretsFile;
 

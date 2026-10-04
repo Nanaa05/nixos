@@ -1,8 +1,8 @@
 keys:
-  - &asus age1cv72lx20apm9k8hp9442smgk5ezqnptmcl45qazx6cmxd40cuv6q4xqk95
+  - &lynaten age1vgteyg2k4nxrzg4378kwm5nw6wst2rawj86vc4fdmlcqudvsnszsukjv9w
 
 creation_rules:
   - path_regex: secrets/[^/]+\.yaml$
     key_groups:
       - age:
-          - *asus
+          - *lynaten
