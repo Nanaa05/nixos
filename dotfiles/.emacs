@@ -72,3 +72,5 @@
 (add-to-list 'auto-mode-alist '("sxwmrc\\'" . conf-space-mode))
 (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-mode))
 (add-to-list 'auto-mode-alist '("\\.mako\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
+

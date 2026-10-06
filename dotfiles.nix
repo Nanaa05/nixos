@@ -27,6 +27,7 @@
       glsl-mode
       cmake-mode
       agent-shell
+      svelte-mode
     ];
   };
 

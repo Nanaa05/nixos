@@ -52,6 +52,7 @@
             ./profiles/sound.nix
             ./profiles/secrets.nix
             ./profiles/agent.nix
+            ./profiles/private-home.nix
           ] ++ extraModules
             ++ [
               home-manager.nixosModules.home-manager

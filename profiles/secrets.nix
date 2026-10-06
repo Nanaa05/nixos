@@ -14,8 +14,9 @@ in {
 
     # skipped until secrets/secrets.yaml exists so the build doesn't break
     secrets = lib.mkIf (builtins.pathExists secretsFile) {
-      openrouter-api-key.owner = "lynaten";
-      kilo-api-key.owner = "lynaten";
+      # group agent: opencode runs as the agent user (profiles/agent.nix) and reads these too
+      openrouter-api-key = { owner = "lynaten"; group = "agent"; mode = "0440"; };
+      kilo-api-key = { owner = "lynaten"; group = "agent"; mode = "0440"; };
     };
   };
 }
