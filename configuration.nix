@@ -179,6 +179,7 @@ in
 
   fonts.packages = with pkgs; [
     terminus_font
+    nerd-fonts.symbols-only
   ];
 
   console = {

@@ -1,6 +1,7 @@
 #!/bin/sh
 systemctl --user start x11-setup.service
 
+emacsclient -c -a '' &
 exec sxwm
 
 # if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then

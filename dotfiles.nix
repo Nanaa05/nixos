@@ -4,9 +4,11 @@
 
   programs.emacs = {
     enable = true;
-    package = pkgs.emacs-nox;
+    package = pkgs.emacs-gtk;
     extraPackages = epkgs: with epkgs; [ 
       xclip
+      catppuccin-theme
+      vterm
       magit
       web-mode
       rust-mode
@@ -32,6 +34,8 @@
       csv-mode
     ];
   };
+
+  services.emacs.enable = true;
 
   # home.file.".emacs".text = builtins.readFile ./dotfiles/.emacs;
   home.file.".config/opencode/opencode.json".text = builtins.toJSON {

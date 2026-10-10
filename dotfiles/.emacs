@@ -19,9 +19,29 @@
 (when (fboundp 'fringe-mode)
   (fringe-mode 0))
 
-(global-display-line-numbers-mode 1)
+;; a reload must also switch off a global mode left on by an older config
+(when (bound-and-true-p global-display-line-numbers-mode)
+  (global-display-line-numbers-mode -1))
+;; show no-break spaces (U+00A0, used by Claude Code's prompt) as normal spaces, not underlined
+(setq nobreak-char-display nil)
 (setq display-line-numbers-type 'visual)
 (setq display-line-numbers-current-absolute t)
+
+;; Line numbers only in programming, text, and config files
+(dolist (hook '(prog-mode-hook text-mode-hook conf-mode-hook))
+  (add-hook hook #'display-line-numbers-mode))
+
+;; Explicitly off in dired, terminals, and compilation
+(dolist (hook '(dired-mode-hook
+                term-mode-hook
+                vterm-mode-hook
+                shell-mode-hook
+                eshell-mode-hook
+                compilation-mode-hook
+                special-mode-hook))
+  (add-hook hook (lambda ()
+                   (setq display-line-numbers nil)
+                   (display-line-numbers-mode -1))))
 
 (tooltip-mode -1)
 (setq ring-bell-function 'ignore)
@@ -90,3 +110,94 @@
 (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-mode))
 (add-to-list 'auto-mode-alist '("\\.mako\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
+
+(add-to-list 'custom-theme-load-path
+             (file-name-directory (locate-library "catppuccin-theme")))
+
+;; Custom face theming for terminal (-nw) mode:
+;; Keeps background transparent while giving text/syntax bright, glowing, light colors.
+(defun my/apply-nw-theme (&optional frame)
+  (let ((target-frame (or frame (selected-frame))))
+    (unless (display-graphic-p target-frame)
+      ;; terminal mouse reports; without this st sends C-y/C-e for the wheel (= yank)
+      (xterm-mouse-mode 1)
+      ;; Keep base background completely transparent
+      (set-face-background 'default "unspecified-bg" target-frame)
+      (set-face-background 'fringe "unspecified-bg" target-frame)
+      (set-face-foreground 'default "#cdd6f4" target-frame)
+      (set-face-background 'cursor "#f5e0dc" target-frame)
+    
+    ;; Syntax faces with light, vibrant colors:
+    (set-face-foreground 'font-lock-comment-face "#9399b2")       ;; Soft readable grey
+    (set-face-foreground 'font-lock-doc-face "#a6adc8")           ;; Light subtext
+    (set-face-foreground 'font-lock-string-face "#a6e3a1")        ;; Light green
+    (set-face-foreground 'font-lock-keyword-face "#f38ba8")       ;; Light pink/red
+    (set-face-foreground 'font-lock-function-name-face "#89b4fa")  ;; Light vivid blue
+    (set-face-foreground 'font-lock-variable-name-face "#f9e2af")  ;; Warm light yellow
+    (set-face-foreground 'font-lock-type-face "#cba6f7")          ;; Light mauve/purple
+    (set-face-foreground 'font-lock-constant-face "#fab387")      ;; Light peach
+    (set-face-foreground 'font-lock-builtin-face "#f5c2e7")       ;; Light rose pink
+    (set-face-foreground 'font-lock-warning-face "#f38ba8")       ;; Crisp warning red
+    
+    ;; UI elements:
+    (set-face-foreground 'line-number "#6c7086")
+    (set-face-foreground 'line-number-current-line "#f5e0dc")
+    ;; 181825
+    ;; b4befe
+    (set-face-background 'region "#737373")                       ;; Darker selection background
+    (set-face-foreground 'region nil)
+    (set-face-background 'mode-line "#11111b")                    ;; Very dark mode-line
+    (set-face-foreground 'mode-line "#cdd6f4")
+    (set-face-background 'mode-line-inactive "#000000")           ;; Pure black inactive mode-line
+    (set-face-foreground 'mode-line-inactive "#6c7086")
+    (set-face-foreground 'minibuffer-prompt "#b4befe")            ;; Light lavender
+    (set-face-bold 'minibuffer-prompt t))))
+
+;; Background transparency (text stays opaque); `opa` overrides it at runtime
+(defvar my/alpha-background 75)
+(add-to-list 'default-frame-alist `(alpha-background . ,my/alpha-background))
+(when (display-graphic-p)
+  (set-frame-parameter nil 'alpha-background my/alpha-background))
+
+;; Nerd Font icons (private use areas) come from the symbols font
+(defun my/setup-icon-fonts ()
+  (when (display-graphic-p)
+    (dolist (range '((#xe000 . #xf8ff) (#xf0000 . #xffffd)))
+      (set-fontset-font t range "Symbols Nerd Font Mono" nil 'prepend))))
+(my/setup-icon-fonts) ; also on reload-config from a graphical frame
+
+(defun my/apply-theme (frame)
+  (if (display-graphic-p frame)
+      (with-selected-frame (or frame (selected-frame))
+        (setq catppuccin-flavor 'mocha)
+        (load-theme 'catppuccin t)
+        ;; Pitch black background instead of Catppuccin dark gray
+        (set-face-background 'default "#000000")
+        (my/setup-icon-fonts)
+        ;; GUI Default Zoom Level (150 = 15pt)
+        (set-face-attribute 'default (or frame (selected-frame)) :height 200))
+    (with-selected-frame (or frame (selected-frame))
+      (my/apply-nw-theme frame))))
+
+(if (daemonp)
+    (add-hook 'after-make-frame-functions #'my/apply-theme)
+  (my/apply-theme nil))
+
+(autoload 'vterm "vterm" "Open a vterm terminal." t)
+(global-set-key (kbd "C-c t") 'vterm)
+;; Mouse wheel in vterm: forward it to the program (SGR mouse report), like st does,
+;; so apps such as Claude Code can scroll themselves. In copy mode (C-c C-t) the
+;; wheel scrolls the Emacs buffer as usual.
+(defun my/vterm-wheel (up)
+  (lambda (event)
+    (interactive "e")
+    (if (bound-and-true-p vterm-copy-mode)
+        (mwheel-scroll event)
+      (vterm-send-string (if up "\e[<64;1;1M" "\e[<65;1;1M")))))
+
+(with-eval-after-load 'vterm
+  (define-key vterm-mode-map (kbd "<wheel-up>") (my/vterm-wheel t))
+  (define-key vterm-mode-map (kbd "<wheel-down>") (my/vterm-wheel nil))
+  ;; terminal frames (xterm-mouse-mode) may report the wheel as mouse-4/5
+  (define-key vterm-mode-map (kbd "<mouse-4>") (my/vterm-wheel t))
+  (define-key vterm-mode-map (kbd "<mouse-5>") (my/vterm-wheel nil)))
