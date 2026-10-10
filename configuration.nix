@@ -68,6 +68,7 @@ in
 {
   imports = [
     ./hardware-configuration.nix
+    ./profiles/exwm-controls.nix
   ];
 
   

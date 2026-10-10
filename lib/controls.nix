@@ -31,5 +31,10 @@ in
 pkgs.symlinkJoin {
   name = "${name}-controls";
   paths = [ script ];
-  postBuild = ''ln -s "$out/bin/${name}" "$out/bin/${alias}"'';
+  postBuild = ''
+    ln -s "$out/bin/${name}" "$out/bin/${alias}"
+  
+    mkdir -p "$out/share/emacs-controls"
+    printf '%s\n%s\n%s\n' "${name}" "${alias}" "${hint}" > "$out/share/emacs-controls/${name}"
+  '';
 }

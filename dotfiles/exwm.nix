@@ -33,12 +33,46 @@
   "Return a command that starts CMD detached from Emacs."
   (lambda () (interactive) (start-process-shell-command cmd nil cmd)))
 
+;; print / s-print: same as before (maim region -> clipboard, s-print also saves a file) but
+;; Emacs says when it starts and shows maim's error if it fails (Esc cancels the selection).
+(defun my/screenshot-run (cmd)
+  ;; Emacs frames are see-through (alpha-background), so a capture would include the
+  ;; wallpaper blended in. Make every frame opaque while selecting/capturing, then restore.
+  (let* ((saved (mapcar (lambda (f) (cons f (or (frame-parameter f 'alpha-background) 100)))
+                        (seq-filter #'display-graphic-p (frame-list))))
+         (restore (lambda ()
+                    (dolist (s saved)
+                      (when (frame-live-p (car s))
+                        (set-frame-parameter (car s) 'alpha-background (cdr s))))))
+         (buf (generate-new-buffer " *screenshot*")))
+    (dolist (s saved) (set-frame-parameter (car s) 'alpha-background 100))
+    (redisplay t)
+    (sleep-for 0.3) ; let the compositor show the opaque frame before maim looks
+    (message "Screenshot: drag a region (Esc cancels)")
+    (make-process :name "screenshot" :buffer buf :noquery t
+                  :connection-type 'pipe ; a pty hangup would kill the xclip that serves the clipboard
+                  :command (list "bash" "-c" (concat "set -o pipefail; " cmd))
+                  :sentinel (lambda (proc _event)
+                              (when (memq (process-status proc) '(exit signal))
+                                (funcall restore)
+                                (let ((out (string-trim (with-current-buffer buf (buffer-string)))))
+                                  (message "%s" (if (zerop (process-exit-status proc))
+                                                    "Screenshot copied to clipboard"
+                                                  (format "Screenshot failed: %s" out))))
+                                (kill-buffer buf))))))
+(defun my/screenshot ()
+  (interactive)
+  (my/screenshot-run "maim -s | xclip -selection clipboard -t image/png >/dev/null 2>&1"))
+(defun my/screenshot-save ()
+  (interactive)
+  (my/screenshot-run "/home/lynaten/.local/bin/screenshot.sh >/dev/null"))
+
 ;; keys that always go to Emacs, even when an X window has focus
 (setq exwm-input-global-keys
       `(([?\s-r] . exwm-reset)
         ([?\s-b] . switch-to-buffer)
         ([?\s-o] . other-window)
-        ([?\s-q] . kill-current-buffer)
+        ([?\s-Q] . kill-current-buffer)
         ([?\s-f] . exwm-layout-toggle-fullscreen)
         ([?\s-p] . exwm-floating-toggle-floating)
         ([?\s-m] . delete-other-windows)
@@ -57,8 +91,8 @@
         ([?\s-e] . ,(my/run "pcmanfm"))
         ([?\s-&] . ,(my/run "dmenu_run -l 5 -fn 'JetBrains Mono:style=Medium:size=20' -p ' Run > ' -nb '#0a1719' -nf '#c1c5c5' -sb '#154C4E' -sf '#c1c5c5'"))
         ([?\s-z] . ,(my/run "boomer"))
-        ([print] . ,(my/run "maim -s | xclip -selection clipboard -t image/png"))
-        ([s-print] . ,(my/run "/home/lynaten/.local/bin/screenshot.sh"))
+        ([print] . my/screenshot)
+        ([s-print] . my/screenshot-save)
         ([s-f1] . ,(my/run "xrandr --output ${env.monitorPrimary} --auto --primary --output ${env.monitorExternal} --auto --right-of ${env.monitorPrimary}"))
         ([s-f2] . ,(my/run "xrandr --output ${env.monitorPrimary} --mode ${env.resFHD} --output ${env.monitorExternal} --mode ${env.resFHD} --same-as ${env.monitorPrimary}"))
         ([s-f3] . ,(my/run "xrandr --output ${env.monitorExternal} --off --output ${env.monitorPrimary} --auto --primary"))))
@@ -78,23 +112,47 @@
   (setq my/rebuild-config
         (completing-read "Rebuild config: " '("save" "min" "max") nil nil nil nil my/rebuild-config))
   (let ((default-directory (expand-file-name "~/nixos/")))
-    (compile (format "sudo nixos-rebuild switch --flake .#%s" my/rebuild-config) t)))
+    (with-current-buffer
+        (compile (format "sudo nixos-rebuild switch --flake .#%s" my/rebuild-config) t)
+      ;; buffer-local, so it only fires for this build: reload once it succeeded
+      (add-hook 'compilation-finish-functions
+                (lambda (_buf msg)
+                  (if (string-prefix-p "finished" msg)
+                      (reload-config)
+                    (message "Rebuild failed, config not reloaded")))
+                nil t))))
+(defalias 'rebuild #'my/rebuild)
 
 ;; window-wallpaper: s-w turns the current X buffer into the wallpaper (its buffer goes
 ;; away, the program keeps running); s-W hands the wallpaper back as a normal buffer.
+(defun my/wallpaper-run (&rest args)
+  "Run window-wallpaper with ARGS; adopt every window id it prints as an EXWM buffer.
+The script leaves those windows mapped; unmapping and adopting happen here, in one go,
+so there is no gap between the wallpaper vanishing and the buffer appearing."
+  (with-temp-buffer
+    (apply #'call-process "/home/lynaten/.local/bin/window-wallpaper" nil t nil args)
+    (dolist (id (split-string (buffer-string)))
+      (setq id (string-to-number id))
+      ;; unmap and adopt in the same breath: picom sees the window appear again at once, so
+      ;; it plays its open fade-in on it, with no gap in which another buffer shows
+      (xcb:+request exwm--connection (make-instance 'xcb:UnmapWindow :window id))
+      (exwm-manage--manage-window id)
+      ;; make sure it is the one on screen (manage-window alone may leave another buffer shown)
+      (when-let ((buf (exwm--id->buffer id)))
+        (switch-to-buffer buf)))))
+
 (defun my/wallpaper-set ()
   "Make the X window of the current buffer the wallpaper of its monitor."
   (interactive)
   (unless (derived-mode-p 'exwm-mode) (user-error "Not an X window buffer"))
   (let ((id exwm--id))
     (exwm-manage--unmanage-window id 'unmanage)
-    (call-process "/home/lynaten/.local/bin/window-wallpaper" nil 0 nil
-                  "set" (number-to-string id))))
+    (my/wallpaper-run "set" (number-to-string id))))
 
 (defun my/wallpaper-clear ()
   "Hand the wallpaper window back to EXWM as a buffer."
   (interactive)
-  (call-process "/home/lynaten/.local/bin/window-wallpaper" nil 0 nil "clear"))
+  (my/wallpaper-run "clear" "exwm"))
 
 (exwm-wm-mode 1)
 ''

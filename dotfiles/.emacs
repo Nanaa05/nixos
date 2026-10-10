@@ -201,6 +201,7 @@
 
 (autoload 'vterm "vterm" "Open a vterm terminal." t)
 (global-set-key (kbd "C-c t") 'vterm)
+(setq vterm-min-window-width 10) ; let the terminal shrink to the window so text wraps (default 80 clips it)
 ;; Mouse wheel in vterm: forward it to a running program (SGR mouse report), like st does,
 ;; so apps such as Claude Code can scroll themselves. At a bare prompt, or in copy mode
 ;; (C-c C-t), the wheel scrolls the Emacs buffer as usual.
@@ -220,3 +221,29 @@
   ;; terminal frames (xterm-mouse-mode) may report the wheel as mouse-4/5
   (define-key vterm-mode-map (kbd "<mouse-4>") (my/vterm-wheel t))
   (define-key vterm-mode-map (kbd "<mouse-5>") (my/vterm-wheel nil)))
+
+;; M-x <control>: commands generated from the manifests lib/controls.nix writes
+;; (name, alias, hint). Empty input shows the value, anything else sets it.
+(defun my/control-define (name hint)
+  (defalias (intern name)
+    (lambda (value)
+      (interactive (list (read-string (format "%s %s (empty = show): " name hint))))
+      (let ((args (unless (string-empty-p value) (list value))))
+        (message "%s" (string-trim
+                       (with-output-to-string
+                         (apply #'call-process name nil standard-output nil args))))))))
+
+(defun my/controls-register ()
+  "Define one command per control manifest (name and alias)."
+  (interactive)
+  (let ((dir "/run/current-system/sw/share/emacs-controls"))
+    (when (file-directory-p dir)
+      (dolist (file (directory-files dir t "^[^.]"))
+        (pcase (with-temp-buffer
+                 (insert-file-contents file)
+                 (split-string (buffer-string) "\n" t))
+          (`(,name ,alias ,hint)
+           (my/control-define name hint)
+           (my/control-define alias hint)))))))
+
+(my/controls-register)
