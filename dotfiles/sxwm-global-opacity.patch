@@ -1,0 +1,48 @@
+diff --git a/src/sxwm.c b/src/sxwm.c
+index f73fca4..dbdaa26 100644
+--- a/src/sxwm.c
++++ b/src/sxwm.c
+@@ -1552,6 +1552,22 @@ void hdl_motion(XEvent *xev)
+ 	}
+ }
+ 
++/* GLOBAL_OPACITY (0-100) on the root window is set by the `opacity` command */
++static void load_global_opacity(void)
++{
++	Atom a = XInternAtom(dpy, "GLOBAL_OPACITY", False), type;
++	int fmt;
++	unsigned long n, rem;
++	unsigned char *d = NULL;
++
++	if (XGetWindowProperty(dpy, root, a, 0, 1, False, AnyPropertyType, &type, &fmt,
++				&n, &rem, &d) == Success && d) {
++		if (n == 1 && fmt == 32)
++			user_config.pinned_overlay_opacity = *(long *)d / 100.0;
++		XFree(d);
++	}
++}
++
+ void hdl_property_ntf(XEvent *xev)
+ {
+ 	XPropertyEvent *property_ev = &xev->xproperty;
+@@ -1574,6 +1590,11 @@ void hdl_property_ntf(XEvent *xev)
+ 			tile();
+ 			update_borders();
+ 		}
++		else if (property_ev->atom == XInternAtom(dpy, "GLOBAL_OPACITY", False)) {
++			load_global_opacity();
++			for (int i = 0; i < n_overlay; i++)
++				set_opacity(overlay_wins[i], user_config.pinned_overlay_opacity);
++		}
+ 	}
+ 
+ 	/* client window properties */
+@@ -3170,6 +3191,8 @@ void show_overlay(void)
+ 	if (n_overlay)
+ 		return; /* already up */
+ 
++	load_global_opacity();
++
+ 	if (user_config.pinned_overlay_opacity <= 0.0)
+ 		return;
+ 

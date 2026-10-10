@@ -1,8 +1,18 @@
 { env, currentHz }:
+let
+  # true:  pinned windows live in their own layer (mod+0 to enter, mod+o to pin/unpin)
+  # false: pinned windows are just sticky floats you can use from any workspace
+  pinnedLayer = true;
+in
 ''
 focused_border_colour    : #31827f
 unfocused_border_colour  : #0a1719
 swap_border_colour       : #eeeeee
+pinned_layer                  : ${if pinnedLayer then "true" else "false"}
+pinned_overlay_opacity         : 0.3
+pinned_overlay_colour          : #000000
+pinned_focused_border_colour   : #7fd1cc
+pinned_unfocused_border_colour : #1f4f4d
 
 gaps                    : 30
 border_width            : 2
@@ -73,8 +83,15 @@ call : mod + minus : decrease_gaps
 
 call : mod + p : toggle_floating
 call : mod + shift + p : global_floating
+call : mod + o : toggle_pin
+call : mod + 0 : toggle_pin_layer
+call : mod + shift + 0 : toggle_pin_hide
 call : mod + shift + f : fullscreen
 call : mod + r : reload_config
+
+# Wallpaper Manager - turn focused window into wallpaper
+bind : mod + w : "/home/lynaten/.local/bin/window-wallpaper set"
+bind : mod + shift + w : "/home/lynaten/.local/bin/window-wallpaper clear"
 
 scratchpad : mod + alt + 1 : create 1
 scratchpad : mod + alt + 2 : create 2

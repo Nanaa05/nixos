@@ -409,3 +409,123 @@ These are design notes, not committed implementation decisions.
 - Keep identity, memory, and state portable between PWA, native phone client,
   and Linux desktop implementations. The phone UI must not become a separate
   personality or incompatible data silo.
+
+## Emacs-centred desktop and EXWM
+
+Status: exploring. Nothing here is implemented or tested yet.
+
+### Goal
+
+- Make Emacs the control centre of the desktop (launcher, controls, shell
+  output, logs) while keeping the existing sxwm, picom, `opacity` and
+  `window-wallpaper` setup working.
+- Keep packages defined by Nix. Do not use `package.el`, MELPA, straight.el or
+  Elpaca: they download into `~/.emacs.d` and break the one-copy-in-the-store
+  rule.
+
+### Layers (stop at any level)
+
+1. Emacs daemon plus `emacsclient`, run as a user service. Packages come from
+   Nix (`programs.emacs.extraPackages`).
+2. Emacs replaces dmenu: a small `emacsclient -c` frame with `completing-read`
+   as launcher. The controls (`volume`, `light`, `font`, `opacity`) stay shell
+   commands built by `lib/controls.nix`; Elisp wrappers call them and show the
+   output immediately, like `M-!`. Long-running commands run async with a
+   capped log, like `M-&`.
+3. Emacs replaces the terminal (`eshell`/`vterm` instead of st). Loses the st
+   swallow behaviour and the runtime-alpha patch.
+4. EXWM replaces sxwm. Every X window, Firefox included, becomes a buffer.
+   Last step, hardest to reverse.
+
+Current plan: layers 1 and 2 first, on top of sxwm. EXWM only if wanted later,
+and first in a nested session (Xephyr) so the real desktop is not lost.
+
+### What EXWM would cost
+
+- The sxwm pinned layer, the veil, and the `GLOBAL_OPACITY` patch
+  (`dotfiles/sxwm-global-opacity.patch`) are sxwm features and would be lost.
+  picom stays.
+- `window-wallpaper` makes the focused window an override-redirect window
+  below everything. It also sends sxwm a synthetic `DestroyNotify` so sxwm
+  forgets the window; that step is sxwm-specific and would need rework.
+- EXWM needs the GUI Emacs build (X support). The current config uses
+  `pkgs.emacs-nox`, which cannot run EXWM or show images.
+- Restarting the EXWM Emacs ends the X session and every app in it. A hung
+  Emacs freezes the desktop.
+
+### Narrowing the restart problem: two Emacs processes
+
+- Keep the Emacs that runs EXWM small and rarely changed: only EXWM, its
+  keybindings, and the few packages it needs.
+- Do the package-heavy work (magit, language modes, shells, the launcher) in a
+  separate Emacs daemon, not the window manager. Restarting that one is cheap
+  (`systemctl --user restart emacs`) and does not touch any X window.
+- Restarting a daemon still closes its buffers. Mitigate with
+  `desktop-save-mode`, `savehist-mode`, `recentf-mode`, `save-place-mode`, and
+  an explicit `M-x desktop-save` or `desktop-auto-save-timeout` before a
+  restart. Unverified: whether a systemd restart (SIGTERM) triggers the
+  save-on-exit hook.
+- Without any restart: the running Emacs can pick up packages added by a
+  rebuild with a reload function (see below).
+
+### Reloading packages without restarting Emacs
+
+Current state: `reload-config` in `dotfiles/.emacs` is only
+`(load-file user-init-file)`. `~/.emacs` is an out-of-store symlink to
+`dotfiles/.emacs`, so config edits are live, but packages added by a rebuild
+are not found by the running Emacs.
+
+Draft (untested), based on home-manager issue #3480, combined with
+`reload-config`:
+
+```elisp
+(defun nix-reload-packages ()
+  "Pick up packages from the latest rebuild without restarting Emacs."
+  (interactive)
+  (let* ((bin (file-truename (executable-find "emacs")))
+         (root (file-name-directory (directory-file-name (file-name-directory bin))))
+         (share (expand-file-name "share/emacs" root))
+         (subdirs (expand-file-name "site-lisp/subdirs.el" share)))
+    (when (file-exists-p subdirs)
+      (load-file subdirs))
+    (when (boundp 'native-comp-eln-load-path)
+      (add-to-list 'native-comp-eln-load-path
+                   (expand-file-name "native-lisp/" share)))))
+
+(defun reload-config ()
+  (interactive)
+  (nix-reload-packages)
+  (load-file user-init-file))
+```
+
+- It uses `file-truename` instead of `nix-store --query`, so no Nix command
+  runs.
+- It only adds new packages. Packages already loaded keep the old code until
+  a restart.
+- It only works if the daemon finds `emacs` through a path that updates on
+  rebuild (for example `/etc/profiles/per-user/<user>/bin/emacs`). If the
+  service hardcodes a store path, `file-truename` returns the old one.
+
+Alternatives found: `twist.el` (hot reload via `exportManifest` and
+`twist-update`, but a whole separate Nix framework and probably a new flake
+input), `exwm-restart` (restarts EXWM in place; whether open X windows survive
+is not confirmed by the EXWM wiki), and `emacsWithPackagesFromUsePackage`
+from emacs-overlay (derives the package list from `init.el`, but adds a flake
+input).
+
+### Open items
+
+- Check how the daemon is started (`services.emacs` or a custom unit) and
+  which path it uses.
+- Remove the MELPA archive and `package-initialize` lines from
+  `dotfiles/.emacs` (all packages come from Nix), and clean the stray
+  `~/.emacs.d/elpa/archives` cache.
+- Decide between `emacs-nox` and the GUI build.
+- Test `exwm-restart`, the reload function, and `window-wallpaper` under EXWM
+  in a nested session before any real switch.
+
+Sources:
+- https://github.com/nix-community/home-manager/issues/3480
+- https://discourse.nixos.org/t/emacs-exwm-home-manager-and-loading-new-emacs-modules/10097
+- https://github.com/emacs-twist/twist.el
+- https://github.com/emacs-exwm/exwm/wiki

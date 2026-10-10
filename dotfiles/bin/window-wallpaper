@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+# window-wallpaper set|clear
+# set:   turn the focused window into the wallpaper of its monitor (borderless,
+#        full monitor, below everything, click-through). Audio/video keep playing.
+#        The previous wallpaper window of that monitor is handed back to the WM.
+# clear: hand every wallpaper window back to the WM (default wallpaper again).
+import json, os, sys
+from Xlib import X, display, Xatom, protocol
+from Xlib.ext import shape, randr
+
+STATE = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "window-wallpaper.json")
+d = display.Display()
+root = d.screen().root
+
+
+def load():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save(s):
+    with open(STATE, "w") as f:
+        json.dump(s, f)
+
+
+def toplevel(w):
+    # climb to the direct child of root
+    while True:
+        p = w.query_tree().parent
+        if p.id == root.id or p.id == 0:
+            return w
+        w = p
+
+
+def monitors():
+    try:
+        return [(m.name and d.get_atom_name(m.name) or str(i), m.x, m.y, m.width_in_pixels, m.height_in_pixels)
+                for i, m in enumerate(root.xrandr_get_monitors(True).monitors)]
+    except Exception:
+        g = root.get_geometry()
+        return [("0", 0, 0, g.width, g.height)]
+
+
+def monitor_for(x, y):
+    mons = monitors()
+    for m in mons:
+        if m[1] <= x < m[1] + m[3] and m[2] <= y < m[2] + m[4]:
+            return m
+    return mons[0]
+
+
+def forget(w):
+    # sxwm only drops a client on DestroyNotify. Send it a synthetic one so it
+    # forgets the window; mapping it again later makes sxwm adopt it as a new
+    # window on whichever workspace is current.
+    ev = protocol.event.DestroyNotify(event=root, window=w)
+    root.send_event(ev, event_mask=X.SubstructureNotifyMask)
+    d.sync()
+
+
+def release(entry):
+    _release(entry)
+
+
+def _release(entry):
+    try:
+        w = d.create_resource_object("window", entry["id"])
+        w.unmap()
+        w.change_attributes(override_redirect=0)
+        w.shape_mask(shape.SO.Set, shape.SK.Input, 0, 0, X.NONE)  # full input again
+        w.configure(x=entry["x"], y=entry["y"], width=entry["w"], height=entry["h"], border_width=entry["bw"])
+        w.map()  # WM sees a MapRequest and manages it again
+        d.sync()
+    except Exception:
+        pass
+
+
+def do_set():
+    focus = d.get_input_focus().focus
+    if not hasattr(focus, "query_tree") or focus.id in (0, 1, root.id):
+        return
+    w = toplevel(focus)
+    if w.id == root.id:
+        return
+    state = load()
+    if any(e["id"] == w.id for e in state.values()):
+        return
+    g = w.get_geometry()
+    pos = root.translate_coords(w, 0, 0)
+    mon = monitor_for(pos.x + g.width // 2, pos.y + g.height // 2)
+    name, mx, my, mw, mh = mon
+    released = name in state
+    if released:
+        release(state.pop(name))
+    entry = {"id": w.id, "x": g.x, "y": g.y, "w": g.width, "h": g.height, "bw": g.border_width}
+    w.unmap()
+    forget(w)  # sxwm drops it from its client list (and re-tiles the rest)
+    w.change_attributes(override_redirect=1)  # and will ignore it when mapped again
+    w.configure(x=mx, y=my, width=mw, height=mh, border_width=0, stack_mode=X.Below)
+    w.shape_rectangles(shape.SO.Set, shape.SK.Input, 0, 0, 0, [])  # empty input region: clicks pass through
+    w.map()
+    w.configure(stack_mode=X.Below)
+    d.sync()
+    state[name] = entry
+    save(state)
+
+
+def do_clear():
+    state = load()
+    for e in state.values():
+        release(e)
+    save({})
+
+
+
+cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+if cmd == "set":
+    do_set()
+elif cmd == "clear":
+    do_clear()
+else:
+    sys.exit("usage: window-wallpaper set|clear")

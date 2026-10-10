@@ -59,9 +59,30 @@
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
+(defun nix-reload-packages ()
+  "Pick up packages from the latest rebuild without restarting Emacs."
+  (interactive)
+  (let* ((bin (file-truename (executable-find "emacs")))
+         (wrapper (expand-file-name ".emacs-wrapped" (file-name-directory bin))))
+    (unless (file-readable-p wrapper)
+      (user-error "No wrapper at %s" wrapper))
+    (with-temp-buffer
+      (insert-file-contents wrapper)
+      (if (re-search-forward
+           "\\(/nix/store/[^/ ]+-emacs-packages-deps\\)/share/emacs/site-lisp" nil t)
+          (let* ((deps (match-string 1))
+                 (share (expand-file-name "share/emacs" deps)))
+            (load-file (expand-file-name "site-lisp/subdirs.el" share))
+            (when (boundp 'native-comp-eln-load-path)
+              (add-to-list 'native-comp-eln-load-path
+                           (expand-file-name "native-lisp/" share)))
+            (message "Loaded packages from %s" deps))
+        (user-error "No emacs-packages-deps path in %s" wrapper)))))
+
 (defun reload-config ()
-      (interactive)
-      (load-file user-init-file))
+  (interactive)
+  (nix-reload-packages)
+  (load-file user-init-file))
 
 ;; Language major mode bindings
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))
@@ -73,4 +94,3 @@
 (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-mode))
 (add-to-list 'auto-mode-alist '("\\.mako\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.svelte\\'" . svelte-mode))
-

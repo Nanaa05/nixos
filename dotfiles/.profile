@@ -46,3 +46,5 @@ fi
 #         chmod 700 "$XDG_RUNTIME_DIR"
 #     fi
 # fi
+
+export PATH="$HOME/.local/bin:$PATH"

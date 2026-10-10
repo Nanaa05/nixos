@@ -4,6 +4,7 @@ let
 in {
   imports  = [
     ../gpu.nix
+    ../logger.nix # TEMPORARY, see logger.nix
   ];
   
   services.picom.enable = true;

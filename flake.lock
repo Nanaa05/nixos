@@ -111,16 +111,16 @@
     "st-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1641555597,
-        "narHash": "sha256-pULT784097GkY+rXElCCYLExJ5ORxYlJ5qeXCojUx0c=",
-        "ref": "refs/tags/0.8.5",
-        "rev": "7fb0c0cc681f36be2ad12091ef93a41671f32738",
-        "revCount": 1140,
+        "lastModified": 1754742914,
+        "narHash": "sha256-Xr1JtaOMVgn+zsD39LFjP/0dkYkvaAXbEcYb3ptgYLA=",
+        "ref": "refs/tags/0.9.3",
+        "rev": "6e970474743d57a5d8b054c41fd3bff2bc895742",
+        "revCount": 1179,
         "type": "git",
         "url": "https://git.suckless.org/st"
       },
       "original": {
-        "ref": "refs/tags/0.8.5",
+        "ref": "refs/tags/0.9.3",
         "type": "git",
         "url": "https://git.suckless.org/st"
       }
@@ -128,17 +128,17 @@
     "sxwm-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1783810761,
-        "narHash": "sha256-slHuEEtHttjmTa95rsVWHJanVcvi60ySzZ8dMJPBpZY=",
-        "owner": "uint23",
-        "repo": "sxwm",
-        "rev": "ba5801fd8cb204aee48ab4a94b835e843e673b1f",
-        "type": "github"
+        "lastModified": 1791320320,
+        "narHash": "sha256-ZnSt2R6I8YLcTe0XFWxpgqfhaUhIaSqCjqvvCJakZ3c=",
+        "ref": "refs/heads/master",
+        "rev": "4673f23a3f281460481515059e34222ab9e0489e",
+        "revCount": 447,
+        "type": "git",
+        "url": "https://github.com/Nanaa05/sxwm"
       },
       "original": {
-        "owner": "uint23",
-        "repo": "sxwm",
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/Nanaa05/sxwm"
       }
     }
   },

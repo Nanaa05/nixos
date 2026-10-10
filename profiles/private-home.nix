@@ -12,15 +12,30 @@
 {
   options.privateHome.enable = lib.mkEnableOption "recursive 0700 on /home/lynaten";
 
+  # Paths the lockdown chmod skips entirely: their modes are left exactly as they are, nothing is
+  # added or removed. For files a container bind-mounts and reads as another uid (e.g. rabbitmq uid 100
+  # reading its config). Set their modes once by hand; this only stops them being reset.
+  options.privateHome.keepAsIs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "Absolute paths (and everything under them) the recursive go-rwx chmod does not touch.";
+  };
+
   config = lib.mkMerge [
     {
       privateHome.enable = true; # <- toggle here
+      privateHome.keepAsIs = [
+        "/home/lynaten/Projects/distributed-hazard-coordination/infra/rabbitmq"
+        "/home/lynaten/Projects/distributed-hazard-coordination/services/aggregator/migrations"
+        "/home/lynaten/Projects/distributed-hazard-coordination/services/auth-service/migrations"
+      ];
     }
     (lib.mkIf config.privateHome.enable {
-      # go-rwx keeps the owner's bits, so git doesn't see mode changes (a literal 0700 made every file executable).
-      # It runs inside agent-acl, first, because chmod resets ACL masks and the agent's ACLs are re-applied right after.
+      # find prunes keepAsIs so chmod never sees those paths; -not -type l mirrors chmod -R, which skips symlinks.
       systemd.services.agent-acl.script = lib.mkBefore ''
-        ${pkgs.coreutils}/bin/chmod -R go-rwx /home/lynaten
+        ${pkgs.findutils}/bin/find /home/lynaten ${lib.optionalString (config.privateHome.keepAsIs != [ ])
+          "\\( ${lib.concatMapStringsSep " -o " (p: "-path ${lib.escapeShellArg p}") config.privateHome.keepAsIs} \\) -prune -o"} \
+          -not -type l -exec ${pkgs.coreutils}/bin/chmod go-rwx {} +
       '';
       users.users.lynaten.homeMode = "0700";
       security.loginDefs.settings.UMASK = "077";

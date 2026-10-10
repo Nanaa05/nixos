@@ -28,6 +28,8 @@
       cmake-mode
       agent-shell
       svelte-mode
+      graphviz-dot-mode
+      csv-mode
     ];
   };
 

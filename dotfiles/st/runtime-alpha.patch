@@ -1,0 +1,52 @@
+diff --git a/x.c b/x.c
+index f32fd6c..08b4d83 100644
+--- a/x.c
++++ b/x.c
+@@ -504,6 +504,24 @@ bpress(XEvent *e)
+ 	}
+ }
+ 
++static void
++readalpha(void)
++{
++	Atom type, a = XInternAtom(xw.dpy, "GLOBAL_OPACITY", 0);
++	int fmt;
++	ulong n, rem;
++	uchar *d;
++
++	if (XGetWindowProperty(xw.dpy, DefaultRootWindow(xw.dpy), a, 0, 1, 0,
++			AnyPropertyType, &type, &fmt, &n, &rem, &d) == Success && d) {
++		if (n == 1 && fmt == 32) {
++			alpha = *(long *)d / 100.0f;
++			LIMIT(alpha, 0.0, 1.0);
++		}
++		XFree(d);
++	}
++}
++
+ void
+ propnotify(XEvent *e)
+ {
+@@ -511,6 +529,13 @@ propnotify(XEvent *e)
+ 	Atom clipboard = XInternAtom(xw.dpy, "CLIPBOARD", 0);
+ 
+ 	xpev = &e->xproperty;
++	if (xpev->window == DefaultRootWindow(xw.dpy) &&
++			xpev->atom == XInternAtom(xw.dpy, "GLOBAL_OPACITY", 0)) {
++		readalpha();
++		xloadcols();
++		redraw();
++		return;
++	}
+ 	if (xpev->state == PropertyNewValue &&
+ 			(xpev->atom == XA_PRIMARY ||
+ 			 xpev->atom == clipboard)) {
+@@ -1174,6 +1199,8 @@ xinit(int cols, int rows)
+ 
+ 	/* colors */
+ 	xw.cmap = XCreateColormap(xw.dpy, parent, xw.vis, None);
++	readalpha();
++	XSelectInput(xw.dpy, DefaultRootWindow(xw.dpy), PropertyChangeMask);
+ 	xloadcols();
+ 
+ 	/* adjust fixed window geometry */

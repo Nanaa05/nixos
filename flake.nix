@@ -10,12 +10,12 @@
     };
 
     sxwm-src = {
-      url = "github:uint23/sxwm";
+      url = "git+https://github.com/Nanaa05/sxwm";
       flake = false;
     };
 
     st-src = {
-      url = "git+https://git.suckless.org/st?ref=refs/tags/0.8.5";
+      url = "git+https://git.suckless.org/st?ref=refs/tags/0.9.3";
       flake = false;
     };
 
@@ -85,7 +85,7 @@
         };
         max = mkSystem {
           currentHz = env.hzMax;
-          extraModules = connectedModules ++ [ ./profiles/max.nix ];
+          extraModules = connectedModules ++ [ ./profiles/max.nix ./profiles/opacity.nix ];
         };
       };
     };

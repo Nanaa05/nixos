@@ -1,32 +1,22 @@
 { pkgs, ... }:
 let
-  volumeCommand = pkgs.writeShellScriptBin "volume" ''
-    SINK="@DEFAULT_AUDIO_SINK@"
 
-    if [ "$#" -eq 0 ]; then
-      STATUS="$(${pkgs.wireplumber}/bin/wpctl get-volume "$SINK")"
-      CURRENT="$(printf '%s\n' "$STATUS" | ${pkgs.gawk}/bin/awk '{ printf "%.0f", $2 * 100 }')"
-
-      if [[ "$STATUS" == *"[MUTED]"* ]]; then
-        echo "''${CURRENT}% (muted)"
-      else
-        echo "''${CURRENT}%"
-      fi
-      exit 0
+  mk = import ../lib/controls.nix pkgs;
+  
+  volumeControls = mk {
+    name = "volume";
+    alias = "vol";
+    label = "Volume";
+    get = ''
+    STATUS="$(${pkgs.wireplumber}/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@)"
+    CURRENT="$(printf '%s\n' "$STATUS" | ${pkgs.gawk}/bin/awk '{ printf "%.0f", $2 * 100 }')"
+    if [[ "$STATUS" == *"[MUTED]"* ]]; then
+      echo "''${CURRENT}% (muted)"
+    else
+      echo "''${CURRENT}%"
     fi
-
-    if [ "$#" -ne 1 ] || ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -gt 100 ]; then
-      echo "Usage: volume <0-100>"
-      exit 1
-    fi
-
-    ${pkgs.wireplumber}/bin/wpctl set-volume "$SINK" "$1%"
-    echo "Volume adjusted to $1%"
   '';
-  volumeControls = pkgs.symlinkJoin {
-    name = "volume-controls";
-    paths = [ volumeCommand ];
-    postBuild = ''ln -s "$out/bin/volume" "$out/bin/vol"'';
+    set = ''${pkgs.wireplumber}/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ "$VALUE%"'';
   };
 in
 {

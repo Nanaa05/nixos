@@ -5,7 +5,8 @@ let
     pname = "sxwm";
     version = "git";
     src = inputs.sxwm-src;
-    buildInputs = with pkgs; [ libX11 libXinerama libXcursor ];
+    buildInputs = with pkgs; [ libX11 libXinerama libXcursor libXext ];
+    patches = [ ../dotfiles/sxwm-global-opacity.patch ];
     makeFlags = [ "PREFIX=$(out)" ];
   };
 
@@ -20,9 +21,10 @@ let
 
     patches = [
       (pkgs.fetchurl {
-        url = "https://st.suckless.org/patches/alpha/st-alpha-20220206-0.8.5.diff";
-        hash = "sha256-QuSAPOKmeDX35TOnB6iijjgEomztFjFFEIlwua7l+4E=";
+        url = "https://st.suckless.org/patches/alpha/st-alpha-20240814-a0274bc.diff";
+        hash = "sha256-Vi9qS67euJyLbfssLxSmn5Mn+otxpQk+cCGeOXlLjUI=";
       })
+      ../dotfiles/st/runtime-alpha.patch
     ];
 
     postPatch = (oldAttrs.postPatch or "") + ''
@@ -32,6 +34,7 @@ let
       sed -i 's/XC_xterm/XC_left_ptr/g' x.c
     '';
   });
+  
 in {
   environment.systemPackages = with pkgs; [
     my-sxwm
@@ -50,9 +53,10 @@ in {
     opencode
     sops age
     xinit xrandr xset xinput xkbcomp xwallpaper
+    (python3.withPackages (ps: [ ps.xlib ]))
     dmenu feh maim xclip xdotool wl-clipboard
-    brightnessctl pcmanfm htop tmux fastfetch zip
-    pavucontrol mpv yt-dlp emacs-nox
+    brightnessctl pcmanfm htop tmux fastfetch zip cava clock-rs
+    pavucontrol mpv emacs-nox
     terminus_font dejavu_fonts liberation_ttf noto-fonts-cjk-sans
     vscode
     krita

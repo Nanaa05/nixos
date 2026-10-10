@@ -1,54 +1,40 @@
 { config, lib, pkgs, ... }:
 let
   env = import ./env.nix;
-  fontCommand = pkgs.writeShellScriptBin "font" ''
-    if [ "$#" -eq 0 ]; then
-      ${pkgs.kbd}/bin/showconsolefont -i \
-        | ${pkgs.gawk}/bin/awk -F ': *' '/Font height:/ { print $2; exit }'
-      exit 0
-    fi
+  mk = import ./lib/controls.nix pkgs;
 
-    if [ "$#" -ne 1 ] || ! [[ "$1" =~ ^(12|14|16|18|20|22|24|28|32)$ ]]; then
-      echo "Usage: font <12|14|16|18|20|22|24|28|32>"
-      exit 1
-    fi
-
-    SIZE=$1
-    FONT_PATH="${pkgs.terminus_font}/share/consolefonts/ter-v''${SIZE}n.psf.gz"
-
-    ${pkgs.kbd}/bin/setfont "$FONT_PATH"
-    echo "TTY font adjusted to $SIZE"
-  '';
-  fontControls = pkgs.symlinkJoin {
-    name = "font-controls";
-    paths = [ fontCommand ];
-    postBuild = ''ln -s "$out/bin/font" "$out/bin/fnt"'';
+  fontControls = mk {
+    name = "font";
+    alias = "fnt";
+    label = "TTY font";
+    unit = "";
+    accept = "^(12|14|16|18|20|22|24|28|32)$";
+    hint = "<12|14|16|18|20|22|24|28|32>";
+    max = null;
+    get = ''
+      ${pkgs.kbd}/bin/showconsolefont -i | ${pkgs.gawk}/bin/awk -F'x' '{ print $2; exit }'
+    '';
+    set = ''
+      ${pkgs.kbd}/bin/setfont "${pkgs.terminus_font}/share/consolefonts/ter-v''${VALUE}n.psf.gz"
+    '';
   };
-  lightCommand = pkgs.writeShellScriptBin "light" ''
-    if [ "$#" -eq 0 ]; then
+
+  lightControls = mk {
+    name = "light";
+    alias = "lit";
+    label = "Backlight";
+    get = ''
       ${pkgs.brightnessctl}/bin/brightnessctl -m | ${pkgs.coreutils}/bin/cut -d, -f4
-      exit 0
-    fi
-
-    if [ "$#" -ne 1 ] || ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -gt 100 ]; then
-      echo "Usage: light <0-100>"
-      exit 1
-    fi
-
-    TARGET=$1
-
-    if [ "$TARGET" -lt 2 ]; then
-      TARGET=2
-    fi
-
-    ${pkgs.brightnessctl}/bin/brightnessctl set "''${TARGET}%" -q
-    echo "Backlight adjusted to ''${TARGET}%"
-  '';
-  lightControls = pkgs.symlinkJoin {
-    name = "light-controls";
-    paths = [ lightCommand ];
-    postBuild = ''ln -s "$out/bin/light" "$out/bin/lit"'';
+    '';
+    prepare = ''
+      if [ "$VALUE" -lt 2 ]; then VALUE=2; fi
+    '';
+    set = ''
+      ${pkgs.brightnessctl}/bin/brightnessctl set "$VALUE%" -q
+    '';
   };
+
+  
   my-custom-grub-theme = pkgs.stdenv.mkDerivation {
     pname = "elegant-grub-custom";
     version = "1.0";
