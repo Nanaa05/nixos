@@ -6,7 +6,7 @@ pkgs:
 , set                        # shell snippet; receives $VALUE
 , accept ? "^[0-9]+$"        # bash regex for a valid argument
 , hint ? "<0-100>"           # shown in the usage message
-, max ? 100                  # numeric upper bound ("" to skip, e.g. font)
+, max ? 100                  # numeric upper bound (null to skip, e.g. font)
 , prepare ? ""               # optional snippet to adjust $VALUE (e.g. clamp)
 , unit ? "%"
 }:
