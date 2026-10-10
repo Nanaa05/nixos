@@ -1,25 +1,12 @@
 #!/bin/sh
 systemctl --user start x11-setup.service
 
-emacsclient -c -a '' &
+# Window manager: EXWM (Emacs) by default.  WM=sxwm startx  gives the old sxwm session.
+# If Emacs/EXWM dies within 20 seconds (broken config), fall back to sxwm instead of a dead screen.
+if [ "${WM:-exwm}" = exwm ]; then
+    start=$(date +%s)
+    /etc/profiles/per-user/lynaten/bin/emacs -l "$HOME/.config/emacs-exwm.el"
+    [ $(( $(date +%s) - start )) -ge 20 ] && exit 0
+fi
+
 exec sxwm
-
-# if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
-#     eval $(dbus-launch --sh-syntax --exit-with-session)
-# fi
-
-# systemctl --user import-environment DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
-
-# export ENV="$HOME/.profile"
-# export XCURSOR_THEME="Bibata-Modern-Ice"
-# export XCURSOR_SIZE="24"
-
-# setxkbmap -option caps:escape &
-
-# xrandr --output eDP --mode 1920x1080 --rate 120
-# xsetroot -cursor_name left_ptr &
-
-# xset r rate 300 50 &
-# xset s off -dpms &
-
-# exec sxwm

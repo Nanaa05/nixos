@@ -7,6 +7,7 @@
     package = pkgs.emacs-gtk;
     extraPackages = epkgs: with epkgs; [ 
       xclip
+      exwm
       catppuccin-theme
       vterm
       magit
@@ -32,6 +33,7 @@
       svelte-mode
       graphviz-dot-mode
       csv-mode
+      pdf-tools
     ];
   };
 
@@ -62,6 +64,13 @@
     executable = true;
     text = builtins.readFile ./dotfiles/.xinitrc;
   };
+  # EXWM: the window-manager Emacs (started by ~/.xinitrc) loads this after ~/.emacs
+  home.file.".config/emacs-exwm.el".text = import ./dotfiles/exwm.nix { inherit env; };
+  # the first frame must be created transparent (ARGB), so set it before ~/.emacs runs
+  home.file.".emacs.d/early-init.el".text = ''
+    ;;; early-init.el -*- lexical-binding: t -*-
+    (add-to-list 'default-frame-alist '(alpha-background . 75))
+  '';
   home.file.".config/picom.conf".text = builtins.readFile ./dotfiles/picom.conf;
   home.file.".profile".text = builtins.readFile ./dotfiles/.profile;
   home.file.".tmux.conf".text = builtins.readFile ./dotfiles/.tmux.conf;

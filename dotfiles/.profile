@@ -1,7 +1,8 @@
 export LANG=en_US.UTF-8
 export BROWSER="firefox"
 alias doas='sudo'
-# alias emacs="TERM=xterm emacs -nw"
+# typing emacs in a terminal opens the terminal version; the GUI comes from dmenu / mod+shift+Return
+alias emacs='emacs -nw'
 export PS1="\[\033[1;32m\]\w\[\033[0m\]\n$ "
 unset SSH_ASKPASS
 

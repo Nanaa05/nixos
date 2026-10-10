@@ -75,6 +75,13 @@
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
+;; PDFs open inside Emacs (pdf-tools; its epdfinfo server is built by Nix). RET in dired opens
+;; them in a pdf-view buffer, so no browser window gets involved. Keys: n/p page, SPC scroll,
+;; + / - zoom, C-s search, q bury.
+;; the Nix-built package is on load-path but not package-activated, so load its autoloads
+(when (load "pdf-tools-autoloads" t t)
+  (pdf-loader-install))
+
 (defun nix-reload-packages ()
   "Pick up packages from the latest rebuild without restarting Emacs."
   (interactive)
@@ -98,7 +105,15 @@
 (defun reload-config ()
   (interactive)
   (nix-reload-packages)
-  (load-file user-init-file))
+  (load-file user-init-file)
+  ;; the window-manager Emacs also reloads the EXWM config
+  (when (and (featurep 'exwm) (bound-and-true-p exwm--connection))
+    (load-file (expand-file-name "~/.config/emacs-exwm.el"))
+    ;; EXWM only registers global keys at startup; redo it, then grab them for X windows
+    (dolist (k exwm-input-global-keys)
+      (exwm-input--set-key (car k) (cdr k)))
+    (exwm-input--update-global-prefix-keys)
+    (exwm-reset)))
 
 ;; Language major mode bindings
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))
@@ -175,23 +190,27 @@
         (set-face-background 'default "#000000")
         (my/setup-icon-fonts)
         ;; GUI Default Zoom Level (150 = 15pt)
-        (set-face-attribute 'default (or frame (selected-frame)) :height 200))
+        (set-face-attribute 'default nil :height 200))
     (with-selected-frame (or frame (selected-frame))
       (my/apply-nw-theme frame))))
 
-(if (daemonp)
-    (add-hook 'after-make-frame-functions #'my/apply-theme)
+;; every new frame gets it, not just the first (EXWM and plain emacs make frames too)
+(add-hook 'after-make-frame-functions #'my/apply-theme)
+(unless (daemonp)
   (my/apply-theme nil))
 
 (autoload 'vterm "vterm" "Open a vterm terminal." t)
 (global-set-key (kbd "C-c t") 'vterm)
-;; Mouse wheel in vterm: forward it to the program (SGR mouse report), like st does,
-;; so apps such as Claude Code can scroll themselves. In copy mode (C-c C-t) the
-;; wheel scrolls the Emacs buffer as usual.
+;; Mouse wheel in vterm: forward it to a running program (SGR mouse report), like st does,
+;; so apps such as Claude Code can scroll themselves. At a bare prompt, or in copy mode
+;; (C-c C-t), the wheel scrolls the Emacs buffer as usual.
 (defun my/vterm-wheel (up)
   (lambda (event)
     (interactive "e")
-    (if (bound-and-true-p vterm-copy-mode)
+    ;; forward only while a program (Claude, less, vim...) runs in the foreground;
+    ;; at a bare shell prompt the wheel scrolls the buffer as usual
+    (if (or (bound-and-true-p vterm-copy-mode)
+            (not (process-running-child-p (get-buffer-process (current-buffer)))))
         (mwheel-scroll event)
       (vterm-send-string (if up "\e[<64;1;1M" "\e[<65;1;1M")))))
 
