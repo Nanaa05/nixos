@@ -185,7 +185,9 @@
   (if (display-graphic-p frame)
       (with-selected-frame (or frame (selected-frame))
         (setq catppuccin-flavor 'mocha)
-        (load-theme 'catppuccin t)
+        ;; early-init.el already loaded it (before the frame existed, which is much cheaper)
+        (unless (memq 'catppuccin custom-enabled-themes)
+          (load-theme 'catppuccin t))
         ;; Pitch black background instead of Catppuccin dark gray
         (set-face-background 'default "#000000")
         (my/setup-icon-fonts)
@@ -233,6 +235,15 @@
                        (with-output-to-string
                          (apply #'call-process name nil standard-output nil args))))))))
 
+;; read-only controls (no setter, manifest has no hint): no value is asked for, it just shows
+(defun my/control-define-readonly (name)
+  (defalias (intern name)
+    (lambda ()
+      (interactive)
+      (message "%s" (string-trim
+                     (with-output-to-string
+                       (call-process name nil standard-output nil)))))))
+
 (defun my/controls-register ()
   "Define one command per control manifest (name and alias)."
   (interactive)
@@ -244,6 +255,9 @@
                  (split-string (buffer-string) "\n" t))
           (`(,name ,alias ,hint)
            (my/control-define name hint)
-           (my/control-define alias hint)))))))
+           (my/control-define alias hint))
+          (`(,name ,alias)
+           (my/control-define-readonly name)
+           (my/control-define-readonly alias)))))))
 
 (my/controls-register)

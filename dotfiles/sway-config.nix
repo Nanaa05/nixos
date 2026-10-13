@@ -28,6 +28,7 @@ bindsym $mod+e exec pcmanfm
 # Note: XWayland will run dmenu just fine, but in the future look into 'bemenu' or 'wofi'
 bindsym $mod+space exec wmenu-run -l 5 -f 'JetBrains Mono 20' -p ' Run > ' -N '#0a1719' -n '#c1c5c5' -S '#154C4E' -s '#c1c5c5'
 bindsym $mod+z exec boomer
+bindsym $mod+Shift+z exec boomer-live
 
 # Screenshots (Wayland native)
 bindsym Print exec grim -g "$(slurp)" - | wl-copy

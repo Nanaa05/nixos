@@ -28,6 +28,8 @@
         "/home/lynaten/Projects/distributed-hazard-coordination/infra/rabbitmq"
         "/home/lynaten/Projects/distributed-hazard-coordination/services/aggregator/migrations"
         "/home/lynaten/Projects/distributed-hazard-coordination/services/auth-service/migrations"
+        # rootless podman image layers: go-rwx strips the modes non-root container users (postgres, rabbitmq...) need
+        "/home/lynaten/.local/share/containers"
       ];
     }
     (lib.mkIf config.privateHome.enable {

@@ -37,10 +37,11 @@ start_fullscreen        : "mpv", "vlc"
 mod_key : super
 
 bind : mod + Return : "st -e /bin/sh -c '. ~/.profile && /bin/sh'"
-bind : mod + shift + Return : "emacsclient -c"
+bind : mod + shift + Return : "emacsclient --alternate-editor= -c"
 bind : mod + e : "pcmanfm"
 bind : mod + space : "dmenu_run -l 5 -fn 'JetBrains Mono:style=Medium:size=20' -p ' Run > ' -nb '#0a1719' -nf '#c1c5c5' -sb '#154C4E' -sf '#c1c5c5'"
 bind : mod + z : "boomer"
+bind : mod + shift + z : "boomer-live"
 bind : Print : "maim -s | xclip -selection clipboard -t image/png"
 bind : mod + Print : "/home/lynaten/.local/bin/screenshot.sh"
 

@@ -1,0 +1,357 @@
+diff --git a/src/atom.h b/src/atom.h
+index eafb5c5..559646d 100644
+--- a/src/atom.h
++++ b/src/atom.h
+@@ -29,7 +29,10 @@
+ 	_NET_WM_WINDOW_TYPE, \
+ 	_XROOTPMAP_ID, \
+ 	ESETROOT_PMAP_ID, \
+-	_XSETROOT_ID
++	_XSETROOT_ID, \
++	_BOOMER_ZOOM, \
++	_BOOMER_FLASHLIGHT, \
++	_BOOMER_ZOOM_ACK
+ 
+ #define ATOM_LIST2 \
+ 	_NET_WM_WINDOW_TYPE_DESKTOP, \
+diff --git a/src/event.c b/src/event.c
+index 2d0bced..f80dbd9 100644
+--- a/src/event.c
++++ b/src/event.c
+@@ -21,6 +21,7 @@
+ #include "log.h"
+ #include "picom.h"
+ #include "region.h"
++#include "renderer/renderer.h"
+ #include "wm/defs.h"
+ #include "wm/wm.h"
+ #include "x.h"
+@@ -545,7 +546,49 @@ static inline void ev_property_notify(session_t *ps, xcb_property_notify_event_t
+ 	}
+ 
+ 	if (ps->c.screen_info->root == ev->window) {
+-		if (ps->o.use_ewmh_active_win && ps->atoms->a_NET_ACTIVE_WINDOW == ev->atom) {
++		if (ev->atom == ps->atoms->a_BOOMER_ZOOM) {
++			// {scale, x, y} * 1000 as CARDINAL/32; missing or invalid = no zoom
++			double scale = 1.0;
++			double zx = 0, zy = 0;
++			auto reply = xcb_get_property_reply(
++			    ps->c.c,
++			    xcb_get_property(ps->c.c, 0, ps->c.screen_info->root,
++			                     ps->atoms->a_BOOMER_ZOOM, XCB_ATOM_CARDINAL, 0, 3),
++			    NULL);
++			if (reply && reply->format == 32 && xcb_get_property_value_length(reply) >= 12) {
++				auto v = (uint32_t *)xcb_get_property_value(reply);
++				scale = v[0] / 1000.0;
++				zx = v[1] / 1000.0;
++				zy = v[2] / 1000.0;
++			}
++			free(reply);
++			if (ps->renderer != NULL) {
++				renderer_set_zoom(ps->renderer, scale, zx, zy);
++			}
++			queue_redraw(ps);
++		} else if (ev->atom == ps->atoms->a_BOOMER_FLASHLIGHT) {
++			// {x, y, radius * 1000, alpha * 1000} as CARDINAL/32; missing = off
++			int fx = 0, fy = 0;
++			double radius = 0, alpha = 0;
++			auto reply = xcb_get_property_reply(
++			    ps->c.c,
++			    xcb_get_property(ps->c.c, 0, ps->c.screen_info->root,
++			                     ps->atoms->a_BOOMER_FLASHLIGHT, XCB_ATOM_CARDINAL, 0, 4),
++			    NULL);
++			if (reply && reply->format == 32 && xcb_get_property_value_length(reply) >= 16) {
++				auto v = (uint32_t *)xcb_get_property_value(reply);
++				fx = (int)v[0];
++				fy = (int)v[1];
++				radius = v[2] / 1000.0;
++				alpha = v[3] / 1000.0;
++			}
++			free(reply);
++			if (ps->renderer != NULL) {
++				renderer_set_flashlight(ps->renderer, fx, fy, radius, alpha);
++			}
++			queue_redraw(ps);
++		} else if (ps->o.use_ewmh_active_win &&
++		           ps->atoms->a_NET_ACTIVE_WINDOW == ev->atom) {
+ 			ev_update_focused(ps);
+ 		} else {
+ 			// Destroy the root "image" if the wallpaper probably changed
+diff --git a/src/picom.c b/src/picom.c
+index 71a77b1..9506dee 100644
+--- a/src/picom.c
++++ b/src/picom.c
+@@ -1171,6 +1171,55 @@ uint8_t session_redirection_mode(session_t *ps) {
+  *
+  * @return whether the operation succeeded or not
+  */
++/// Show an exact copy of what is on the screen right now in our own window, before the
++/// windows get redirected. Redirecting makes the X server stop drawing windows, so until
++/// our first real frame reaches the screen (at the next vblank) only the wallpaper would
++/// be visible. With the copy already presented, that frame is invisible.
++static void present_screen_copy(session_t *ps) {
++	if (!ps->backend_data->ops.present || !ps->backend_data->ops.bind_pixmap) {
++		return;
++	}
++	auto root = ps->c.screen_info->root;
++	xcb_pixmap_t pixmap = x_new_id(&ps->c);
++	xcb_gcontext_t gc = x_new_id(&ps->c);
++	xcb_create_pixmap(ps->c.c, ps->c.screen_info->root_depth, pixmap, root,
++	                  (uint16_t)ps->root_width, (uint16_t)ps->root_height);
++	xcb_create_gc(ps->c.c, gc, root, XCB_GC_SUBWINDOW_MODE,
++	              (const uint32_t[]){XCB_SUBWINDOW_MODE_INCLUDE_INFERIORS});
++	xcb_copy_area(ps->c.c, root, pixmap, gc, 0, 0, 0, 0, (uint16_t)ps->root_width,
++	              (uint16_t)ps->root_height);
++	xcb_aux_sync(ps->c.c);
++
++	auto image = ps->backend_data->ops.bind_pixmap(
++	    ps->backend_data, pixmap,
++	    x_get_visual_info(&ps->c, ps->c.screen_info->root_visual));
++	if (image != NULL) {
++		region_t screen;
++		pixman_region32_init_rect(&screen, 0, 0, (unsigned)ps->root_width,
++		                          (unsigned)ps->root_height);
++		struct backend_blit_args args = {
++		    .source_image = image,
++		    .max_brightness = 1,
++		    .tint = {1, 1, 1, 1},
++		    .effective_size = {ps->root_width, ps->root_height},
++		    .source_mask = NULL,
++		    .target_mask = &screen,
++		    .scale = SCALE_IDENTITY,
++		};
++		if (ps->backend_data->ops.prepare) {
++			ps->backend_data->ops.prepare(ps->backend_data, &screen);
++		}
++		ps->backend_data->ops.blit(ps->backend_data, (ivec2){},
++		                           ps->backend_data->ops.back_buffer(ps->backend_data),
++		                           &args);
++		ps->backend_data->ops.present(ps->backend_data);
++		pixman_region32_fini(&screen);
++		ps->backend_data->ops.release_image(ps->backend_data, image);
++	}
++	xcb_free_gc(ps->c.c, gc);
++	xcb_free_pixmap(ps->c.c, pixmap);
++}
++
+ static bool redirect_start(session_t *ps) {
+ 	assert(!ps->redirected);
+ 	log_debug("Redirecting the screen.");
+@@ -1181,6 +1230,15 @@ static bool redirect_start(session_t *ps) {
+ 		xcb_map_window(ps->c.c, ps->overlay);
+ 	}
+ 
++	// Set the renderer up before taking over the screen: once the windows are
++	// redirected the screen shows only the wallpaper until our first frame, so the
++	// slow part (GL context, shaders) must not happen in that window.
++	if (!initialize_backend(ps)) {
++		return false;
++	}
++
++	present_screen_copy(ps);
++
+ 	bool success = XCB_AWAIT_VOID(xcb_composite_redirect_subwindows, &ps->c,
+ 	                              ps->c.screen_info->root, session_redirection_mode(ps));
+ 	if (!success) {
+@@ -1191,10 +1249,6 @@ static bool redirect_start(session_t *ps) {
+ 
+ 	xcb_aux_sync(ps->c.c);
+ 
+-	if (!initialize_backend(ps)) {
+-		return false;
+-	}
+-
+ 	assert(ps->backend_data);
+ 	auto damage_count = ps->backend_data->ops.max_buffer_age(ps->backend_data);
+ 	ps->layout_manager = layout_manager_new((unsigned)damage_count);
+@@ -2267,6 +2321,11 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
+ 		goto err;
+ 	}
+ 
++	// Tell clients (e.g. boomer) that this picom understands _BOOMER_ZOOM.
++	xcb_change_property(ps->c.c, XCB_PROP_MODE_REPLACE, ps->c.screen_info->root,
++	                    ps->atoms->a_BOOMER_ZOOM_ACK, XCB_ATOM_CARDINAL, 32, 1,
++	                    (const uint32_t[]){(uint32_t)getpid()});
++
+ 	// Query the size of the root window. We need the size information before any
+ 	// window can be managed.
+ 	auto r = XCB_AWAIT(xcb_get_geometry, &ps->c, ps->c.screen_info->root);
+@@ -2355,6 +2414,13 @@ err:
+  * @param ps session to destroy
+  */
+ static void session_destroy(session_t *ps) {
++	// Withdraw the _BOOMER_ZOOM_ACK we set at startup, and any zoom left over.
++	if (ps->c.c != NULL && ps->atoms != NULL) {
++		xcb_delete_property(ps->c.c, ps->c.screen_info->root, ps->atoms->a_BOOMER_ZOOM_ACK);
++		xcb_delete_property(ps->c.c, ps->c.screen_info->root, ps->atoms->a_BOOMER_ZOOM);
++		xcb_delete_property(ps->c.c, ps->c.screen_info->root, ps->atoms->a_BOOMER_FLASHLIGHT);
++		xcb_flush(ps->c.c);
++	}
+ 	if (ps->redirected) {
+ 		unredirect(ps);
+ 	}
+diff --git a/src/renderer/renderer.c b/src/renderer/renderer.c
+index 24f4d86..2300738 100644
+--- a/src/renderer/renderer.c
++++ b/src/renderer/renderer.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: MPL-2.0
+ // Copyright (c) Yuxuan Shui <yshuiv7@gmail.com>
+ 
++#include <math.h>
+ #include "renderer.h"
+ 
+ #include <inttypes.h>
+@@ -42,9 +43,67 @@ struct renderer {
+ 
+ 	/// A dynarr of region_t for storing culled masks
+ 	region_t *culled_masks;
++
++	/// Zoom of the final frame, see `renderer_set_zoom`
++	double zoom_scale;
++	double zoom_x, zoom_y;
++	/// Flashlight, see `renderer_set_flashlight`
++	int fl_x, fl_y;
++	double fl_radius, fl_alpha;
++	shader_handle fl_shader;
++	bool fl_shader_tried;
++	/// Frames left in which the whole screen must be repainted after zooming ends,
++	/// so every buffer in the swap chain gets the unzoomed picture back.
++	int zoom_repaint_frames;
+ };
+ 
++/// Whether the final frame is composed through the zoom path, instead of being copied.
++static bool renderer_zoom_path(const struct renderer *r) {
++	return r->zoom_scale > 1.0 || r->fl_alpha > 0.001;
++}
++
++void renderer_set_zoom(struct renderer *r, double scale, double x, double y) {
++	bool was_active = renderer_zoom_path(r);
++	r->zoom_scale = scale > 1.0 ? scale : 1.0;
++	r->zoom_x = x;
++	r->zoom_y = y;
++	if (was_active && !renderer_zoom_path(r)) {
++		r->zoom_repaint_frames = r->max_buffer_age + 1;
++	}
++}
++
++void renderer_set_flashlight(struct renderer *r, int x, int y, double radius, double alpha) {
++	bool was_active = renderer_zoom_path(r);
++	r->fl_x = x;
++	r->fl_y = y;
++	r->fl_radius = radius;
++	r->fl_alpha = alpha > 0 ? alpha : 0;
++	if (was_active && !renderer_zoom_path(r)) {
++		r->zoom_repaint_frames = r->max_buffer_age + 1;
++	}
++}
++
++// Dims everything except a circle. The blit passes its parameters through uniforms
++// the shader interface already has: `opacity` = dim alpha, `corner_radius` = circle
++// radius, `effective_size` = circle center in OpenGL window coordinates.
++static const char flashlight_shader_source[] =
++    "#version 330\n"
++    "in vec2 texcoord;\n"
++    "uniform sampler2D tex;\n"
++    "uniform float opacity;\n"
++    "uniform float corner_radius;\n"
++    "uniform vec2 effective_size;\n"
++    "vec4 window_shader() {\n"
++    "\tfloat d = length(gl_FragCoord.xy - effective_size);\n"
++    "\tfloat lit = smoothstep(corner_radius - 0.5, corner_radius + 0.5, d);\n"
++    "\treturn vec4(0.0, 0.0, 0.0, opacity * lit);\n"
++    "}\n";
++
+ void renderer_free(struct backend_base *backend, struct renderer *r) {
++	if (r->fl_shader && backend->ops.destroy_shader) {
++		backend->ops.destroy_shader(backend, r->fl_shader);
++		r->fl_shader = NULL;
++	}
+ 	if (r->white_image) {
+ 		backend->ops.release_image(backend, r->white_image);
+ 	}
+@@ -495,6 +554,13 @@ bool renderer_render(struct renderer *r, struct backend_base *backend,
+ 		layout_manager_damage(lm, (unsigned)buffer_age, blur_size, &damage_region);
+ 	}
+ 
++	if (renderer_zoom_path(r) || r->zoom_repaint_frames > 0) {
++		pixman_region32_copy(&damage_region, &screen_region);
++		if (r->zoom_repaint_frames > 0) {
++			r->zoom_repaint_frames--;
++		}
++	}
++
+ 	dynarr_resize(r->culled_masks, layout->number_of_commands, pixman_region32_init,
+ 	              pixman_region32_fini);
+ 	commands_cull_with_damage(layout, &damage_region, blur_size, r->culled_masks);
+@@ -557,8 +623,50 @@ bool renderer_render(struct renderer *r, struct backend_base *backend,
+ 		backend->ops.blit(backend, (ivec2){}, r->back_image, &blit);
+ 	}
+ 
+-	backend->ops.copy_area_quantize(backend, (ivec2){}, backend->ops.back_buffer(backend),
+-	                                r->back_image, &damage_region);
++	if (renderer_zoom_path(r)) {
++		// Draw the finished frame, scaled, over the whole back buffer.
++		struct backend_blit_args zoom_blit = {
++		    .source_image = r->back_image,
++		    .max_brightness = 1,
++		    .tint = {1, 1, 1, 1},
++		    .effective_size = r->canvas_size,
++		    .source_mask = NULL,
++		    .target_mask = &screen_region,
++		    .scale = (vec2){r->zoom_scale, r->zoom_scale},
++		};
++		backend->ops.blit(backend,
++		                  (ivec2){(int)lround(-r->zoom_x * r->zoom_scale),
++		                          (int)lround(-r->zoom_y * r->zoom_scale)},
++		                  backend->ops.back_buffer(backend), &zoom_blit);
++
++		if (r->fl_alpha > 0.001 && backend->ops.create_shader) {
++			if (r->fl_shader == NULL && !r->fl_shader_tried) {
++				r->fl_shader_tried = true;
++				r->fl_shader = backend->ops.create_shader(
++				    backend, NULL, flashlight_shader_source);
++			}
++		}
++		if (r->fl_alpha > 0.001 && r->fl_shader != NULL) {
++			struct backend_blit_args fl_blit = {
++			    .source_image = r->back_image,
++			    .shader = r->fl_shader,
++			    .max_brightness = 1,
++			    .tint = {0, 0, 0, r->fl_alpha},
++			    .corner_radius = r->fl_radius,
++			    // OpenGL window coordinates have their origin at the bottom left
++			    .effective_size = {r->fl_x, r->canvas_size.height - r->fl_y},
++			    .source_mask = NULL,
++			    .target_mask = &screen_region,
++			    .scale = SCALE_IDENTITY,
++			};
++			backend->ops.blit(backend, (ivec2){},
++			                  backend->ops.back_buffer(backend), &fl_blit);
++		}
++	} else {
++		backend->ops.copy_area_quantize(backend, (ivec2){},
++		                                backend->ops.back_buffer(backend),
++		                                r->back_image, &damage_region);
++	}
+ 
+ 	if (global_debug_options.consistent_buffer_age) {
+ 		region_t region;
+diff --git a/src/renderer/renderer.h b/src/renderer/renderer.h
+index 0f7a507..aa0da26 100644
+--- a/src/renderer/renderer.h
++++ b/src/renderer/renderer.h
+@@ -22,6 +22,13 @@ typedef struct pixman_box32 rect_t;
+ void renderer_free(struct backend_base *backend, struct renderer *r);
+ struct renderer *
+ renderer_new(struct backend_base *backend, double shadow_radius, bool dithered_present);
++/// Set the zoom applied to the final frame. `scale` <= 1 disables zoom. (x, y) is the
++/// top-left corner of the visible part of the screen, in unscaled screen pixels.
++void renderer_set_zoom(struct renderer *r, double scale, double x, double y);
++/// Set the flashlight: dim the whole final frame with `alpha`, except a circle of
++/// `radius` pixels centered on (x, y) in final-frame pixels, origin at the top left.
++/// `alpha` <= 0 disables it.
++void renderer_set_flashlight(struct renderer *r, int x, int y, double radius, double alpha);
+ bool renderer_render(struct renderer *r, struct backend_base *backend,
+                      image_handle root_image, const rect_t *root_image_extent,
+                      struct layout_manager *lm, struct command_builder *cb,

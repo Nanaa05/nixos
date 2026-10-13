@@ -118,6 +118,9 @@ def do_set(wid=None):
     w.unmap()
     if not wid:
         forget(w)  # sxwm drops it from its client list (and re-tiles the rest)
+    # picom matches this property to give the wallpaper no close/hide animation: its fade-out
+    # uncovered the buffer underneath for a moment when s-W handed the window back to EXWM
+    w.change_property(d.intern_atom("_WINDOW_WALLPAPER"), Xatom.CARDINAL, 32, [1])
     w.change_attributes(override_redirect=1)  # and will ignore it when mapped again
     w.configure(x=mx, y=my, width=mw, height=mh, border_width=0, stack_mode=X.Below)
     w.shape_rectangles(shape.SO.Set, shape.SK.Input, 0, 0, 0, [])  # empty input region: clicks pass through

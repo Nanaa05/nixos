@@ -34,7 +34,25 @@ let
     '';
   };
 
-  
+  # read-only: no setter, Emacs asks for no value
+  powerControls = mk {
+    name = "power";
+    alias = "pwr";
+    label = "Power";
+    get = ''
+      cap=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -n1)
+      status=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -n1)
+      ac=$(cat /sys/class/power_supply/A*/online 2>/dev/null | head -n1)
+      if [ -z "$cap" ]; then
+        echo "no battery"
+      elif [ "$ac" = 1 ]; then
+        echo "$cap% (''${status,,}, AC)"
+      else
+        echo "$cap% (''${status,,})"
+      fi
+    '';
+  };
+
   my-custom-grub-theme = pkgs.stdenv.mkDerivation {
     pname = "elegant-grub-custom";
     version = "1.0";
@@ -121,6 +139,16 @@ in
   i18n.defaultLocale = "en_US.UTF-8";
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.auto-optimise-store = true;
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 14d";
+  };
+
+  # compressed RAM swap in front of the disk swap; swap only under real pressure
+  zramSwap.enable = true;
+  boot.kernel.sysctl."vm.swappiness" = 10;
   nix.package = pkgs.lix;
 
   services.getty.helpLine = "";
@@ -173,7 +201,7 @@ in
 
   users.users.lynaten = {
     isNormalUser = true;
-    extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" "lp" "scanner" "docker"];
+    extraGroups = [ "networkmanager" "wheel" "docker" "video" "audio" "lp" "scanner" "podman"];
   };
 
   nix.settings.trusted-users = [ "root" "@wheel" "lynaten" ];
@@ -196,24 +224,30 @@ in
 
   # Enable CUPS
   services.printing.enable = true;
+  services.printing.browsed.enable = false; # no network printer discovery daemon
 
   # Add the HP driver with the proprietary plugin
   services.printing.drivers = [ pkgs.hplipWithPlugin ];
   
-  virtualisation.docker.enable = true;
+  # Podman replaces Docker: no dockerd/containerd; `docker` and `docker compose` keep working
+  # bare image names (`docker run alpine`) resolve on Docker Hub, like real Docker
+  virtualisation.containers.registries.search = [ "docker.io" ];
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;     # `docker` command is podman
+    dockerSocket.enable = true; # docker API socket for docker-compose and tools
+    defaultNetwork.settings.dns_enabled = true; # compose services resolve each other by name
+  };
   
   environment.systemPackages = with pkgs; [
+    docker-compose # `docker compose` / `podman compose` provider, talks to the podman socket
     vim wget curl git pciutils usbutils vis fzf fd ripgrep xclip devenv tree
     bibata-cursors jq python3 python313Packages.pip
 
-    # TODO: Dynamic Battery Name
-    (pkgs.writeShellScriptBin "power" ''
-    cat /sys/class/power_supply/${env.battery}/capacity
-    '')
-    
-    
+    # (`power` used to be a plain script here; it is now powerControls below)
     fontControls
     lightControls
+    powerControls
   ];
   
   time.timeZone = "Asia/Jakarta";

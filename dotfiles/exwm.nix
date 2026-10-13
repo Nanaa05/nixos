@@ -67,6 +67,60 @@
   (interactive)
   (my/screenshot-run "/home/lynaten/.local/bin/screenshot.sh >/dev/null"))
 
+;; window size, like sxwm: s-= / s-- grow and shrink the gap around the whole EXWM screen, s-S-arrows
+;; resize the current window by 50 px, s-0 resets gaps and balances windows.
+;; The gap shrinks EXWM's workareas, so the frame container gets smaller and the real wallpaper
+;; shows around it (an Emacs internal border would be painted opaque black).
+(defvar my/gaps 0)
+(defvar my/gaps-limit 0 "Largest allowed gap, measured on the unshrunk workareas.")
+(defun my/gaps-max ()
+  "Largest gap that still leaves a quarter of the smallest workarea in each direction."
+  (let ((w (apply #'min (mapcar (lambda (a) (min (oref a width) (oref a height)))
+                                exwm-workspace--workareas))))
+    (max 0 (/ (- w (/ w 4)) 2))))
+(defun my/workareas-shrink (&rest _)
+  "Shrink every EXWM workarea by `my/gaps' on all sides (runs after EXWM computes them)."
+  (unless (zerop my/gaps)
+    (let ((g (min my/gaps (my/gaps-max))))
+      (dolist (w exwm-workspace--workareas)
+        (with-slots (x y width height) w
+          (setf x (+ x g) y (+ y g) width (- width (* 2 g)) height (- height (* 2 g)))
+          ;; Emacs rounds its frame down to whole character cells, so a container that is not a
+          ;; multiple of the cell size leaves an unpainted strip on the right/bottom (a frozen copy
+          ;; of the wallpaper). Make the container a whole number of cells, centred.
+          (let* ((cw (frame-char-width)) (ch (frame-char-height))
+                 (rw (% width cw)) (rh (% height ch)))
+            (setf x (+ x (/ rw 2)) y (+ y (/ rh 2))
+                  width (- width rw) height (- height rh))))))))
+(advice-add 'exwm-workspace--update-workareas :after #'my/workareas-shrink)
+(defun my/gaps-set (n)
+  ;; refresh the workareas first (no gap) so the cap is computed from the real size
+  (setq my/gaps 0)
+  (exwm-workspace--update-workareas)
+  (setq my/gaps-limit (my/gaps-max)
+        my/gaps (min (max 0 n) my/gaps-limit))
+  (exwm-workspace--update-workareas)
+  (dolist (f exwm-workspace--list) (exwm-workspace--set-fullscreen f))
+  (exwm-layout--refresh)
+  (my/mode-line-scale))
+
+;; the mode line shrinks as the gap grows: the default font height with no gap, half of it at the
+;; largest gap (my/gaps-max)
+(defun my/mode-line-scale ()
+  (let* ((ratio (if (zerop my/gaps-limit) 0 (/ (float my/gaps) my/gaps-limit)))
+         (height (if (zerop my/gaps)
+                     'unspecified ; follow the default face again
+                   (round (* (face-attribute 'default :height) (- 1 (* 0.5 ratio)))))))
+    (dolist (f '(mode-line mode-line-inactive))
+      (set-face-attribute f nil :height height))))
+(defun my/gaps-increase () (interactive) (my/gaps-set (+ my/gaps 10)))
+(defun my/gaps-decrease () (interactive) (my/gaps-set (- my/gaps 10)))
+(defun my/size-reset () (interactive) (my/gaps-set 0) (balance-windows))
+(defun my/enlarge-width () (interactive) (enlarge-window-horizontally (/ 50 (frame-char-width))))
+(defun my/shrink-width () (interactive) (shrink-window-horizontally (/ 50 (frame-char-width))))
+(defun my/enlarge-height () (interactive) (enlarge-window (/ 50 (frame-char-height))))
+(defun my/shrink-height () (interactive) (shrink-window (/ 50 (frame-char-height))))
+
 ;; keys that always go to Emacs, even when an X window has focus
 (setq exwm-input-global-keys
       `(([?\s-r] . exwm-reset)
@@ -79,6 +133,13 @@
         ([?\s-B] . my/rebuild)
         ([?\s-w] . my/wallpaper-set)
         ([?\s-W] . my/wallpaper-clear)
+        ([?\s-=] . my/gaps-increase)
+        ([?\s--] . my/gaps-decrease)
+        ([?\s-0] . my/size-reset)
+        ([S-s-right] . my/enlarge-width)
+        ([S-s-left] . my/shrink-width)
+        ([S-s-up] . my/shrink-height)
+        ([S-s-down] . my/enlarge-height)
         ([?\s-h] . windmove-left)
         ([?\s-j] . windmove-down)
         ([?\s-k] . windmove-up)
@@ -91,6 +152,7 @@
         ([?\s-e] . ,(my/run "pcmanfm"))
         ([?\s-&] . ,(my/run "dmenu_run -l 5 -fn 'JetBrains Mono:style=Medium:size=20' -p ' Run > ' -nb '#0a1719' -nf '#c1c5c5' -sb '#154C4E' -sf '#c1c5c5'"))
         ([?\s-z] . ,(my/run "boomer"))
+        ([?\s-Z] . ,(my/run "boomer-live"))
         ([print] . my/screenshot)
         ([s-print] . my/screenshot-save)
         ([s-f1] . ,(my/run "xrandr --output ${env.monitorPrimary} --auto --primary --output ${env.monitorExternal} --auto --right-of ${env.monitorPrimary}"))
@@ -100,7 +162,10 @@
 ;; C-c is an Emacs prefix (exwm-mode-map: C-c C-q, C-c C-k...), so Ctrl+C never reached
 ;; Firefox and copy failed with "C-c C-c is undefined". Send a real C-c to the program.
 ;; setopt runs the option's setter, so this also applies on reload-config.
-(setopt exwm-input-simulation-keys '(([?\C-c] . [?\C-c])))
+;; (setopt exwm-input-simulation-keys '(([?\C-c] . [?\C-c])))
+;; (setopt exwm-input-simulation-keys '(([?\C-x] . [?\C-x])))
+;; (setopt exwm-input-simulation-keys '(([?\C-u] . [?\C-u])))
+(setq exwm-input-simulation-keys nil)
 
 ;; s-B (super+shift+b): rebuild NixOS and show the output in the *compilation* buffer. It is a comint
 ;; buffer, so the sudo password can be typed straight into it. Asks which flake config
@@ -138,7 +203,7 @@ so there is no gap between the wallpaper vanishing and the buffer appearing."
       (xcb:+request exwm--connection (make-instance 'xcb:UnmapWindow :window id))
       (exwm-manage--manage-window id)
       ;; make sure it is the one on screen (manage-window alone may leave another buffer shown)
-      (when-let ((buf (exwm--id->buffer id)))
+      (when-let* ((buf (exwm--id->buffer id)))
         (switch-to-buffer buf)))))
 
 (defun my/wallpaper-set ()
@@ -153,6 +218,10 @@ so there is no gap between the wallpaper vanishing and the buffer appearing."
   "Hand the wallpaper window back to EXWM as a buffer."
   (interactive)
   (my/wallpaper-run "clear" "exwm"))
+
+;; the key list above names commands defined further down, so it can only be type-checked (and the
+;; keys re-grabbed on reload-config) now that they all exist; setopt runs the option's setter
+(setopt exwm-input-global-keys exwm-input-global-keys)
 
 (exwm-wm-mode 1)
 ''

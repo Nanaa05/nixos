@@ -25,7 +25,6 @@ let
       # detached in its own session: (1) from M-! Emacs is blocked waiting for us and cannot
       # answer emacsclient, so a foreground call would deadlock; (2) from the s-& prompt the
       # command gets a pty, and a plain background job is killed when its shell exits
-      ${pkgs.util-linux}/bin/setsid -f ${pkgs.coreutils}/bin/timeout 5 ${pkgs.emacs-gtk}/bin/emacsclient --eval "(progn (dolist (f (frame-list)) (when (display-graphic-p f) (set-frame-parameter f 'alpha-background $VALUE))) (add-to-list 'default-frame-alist '(alpha-background . $VALUE)))" </dev/null >/dev/null 2>&1
       ${pkgs.util-linux}/bin/setsid -f ${pkgs.coreutils}/bin/timeout 5 ${pkgs.emacs-gtk}/bin/emacsclient -s exwm --eval "(progn (dolist (f (frame-list)) (when (display-graphic-p f) (set-frame-parameter f 'alpha-background $VALUE))) (add-to-list 'default-frame-alist '(alpha-background . $VALUE)))" </dev/null >/dev/null 2>&1
     '';
   };

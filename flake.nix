@@ -14,6 +14,21 @@
       flake = false;
     };
 
+    boomer-src = {
+      url = "github:Nanaa05/boomer";
+      flake = false;
+    };
+
+    nim-x11-src = {
+      url = "github:nim-lang/x11/29aca5e519ebf5d833f63a6a2769e62ec7bfb83a";
+      flake = false;
+    };
+
+    nim-opengl-src = {
+      url = "github:nim-lang/opengl/8e2e098f82dc5eefd874488c37b5830233cd18f4";
+      flake = false;
+    };
+
     st-src = {
       url = "git+https://git.suckless.org/st?ref=refs/tags/0.9.3";
       flake = false;
@@ -85,7 +100,9 @@
         };
         max = mkSystem {
           currentHz = env.hzMax;
-          extraModules = connectedModules ++ [ ./profiles/max.nix ./profiles/opacity.nix ];
+          extraModules = connectedModules
+                         ++ [ ./profiles/max.nix ./profiles/opacity.nix ./profiles/blur.nix ]
+                         ++ nixpkgs.lib.optional env.hasNvidia ./profiles/no-nvidia.nix;
         };
       };
     };

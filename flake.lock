@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "boomer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791742706,
+        "narHash": "sha256-QuPKddAyUSUpFBJE41beZSskmisenhq+wQVn9H3LtJA=",
+        "owner": "Nanaa05",
+        "repo": "boomer",
+        "rev": "e4de3f9f87bb1b5ccf6b5bbddf85b51337bfb7c5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Nanaa05",
+        "repo": "boomer",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -17,6 +33,40 @@
       "original": {
         "owner": "nix-community",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nim-opengl-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1696569934,
+        "narHash": "sha256-v3bMDobYQZqX0anBFIUfZx5q5/vxTHO6PDtKQlf5mgU=",
+        "owner": "nim-lang",
+        "repo": "opengl",
+        "rev": "8e2e098f82dc5eefd874488c37b5830233cd18f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nim-lang",
+        "repo": "opengl",
+        "rev": "8e2e098f82dc5eefd874488c37b5830233cd18f4",
+        "type": "github"
+      }
+    },
+    "nim-x11-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1696573468,
+        "narHash": "sha256-jBNsv8meDvF2ySKewbA+rF2XS+gqydZUl1xhEevD15o=",
+        "owner": "nim-lang",
+        "repo": "x11",
+        "rev": "29aca5e519ebf5d833f63a6a2769e62ec7bfb83a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nim-lang",
+        "repo": "x11",
+        "rev": "29aca5e519ebf5d833f63a6a2769e62ec7bfb83a",
         "type": "github"
       }
     },
@@ -38,7 +88,10 @@
     },
     "root": {
       "inputs": {
+        "boomer-src": "boomer-src",
         "home-manager": "home-manager",
+        "nim-opengl-src": "nim-opengl-src",
+        "nim-x11-src": "nim-x11-src",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix",
         "spotifast": "spotifast",

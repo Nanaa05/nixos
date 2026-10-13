@@ -10,17 +10,15 @@ in {
   services.picom.enable = true;
   
   systemd.user.services.picom = {
-    after = [ "default.target" "x11-setup.service" ];
-    wantedBy = [ "default.target" ];
+    after = [ "x11-setup.service" ];
+    # started by ~/.xinitrc once x11-setup is done: at login X is not up yet, so picom failed
+    # and systemd retried 3 s later, after Emacs had already opened without a compositor
+    wantedBy = lib.mkForce [ ];
 
     serviceConfig = {
       Environment = lib.mkForce [ "DISPLAY=:0" ];
-      ExecStartPre = "${pkgs.writeShellScript "set-120hz" ''
-        MONITOR=$(${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep " connected" | ${pkgs.coreutils}/bin/cut -d ' ' -f1)
-
-        # TODO: Dynamic Hz Max
-        ${pkgs.xrandr}/bin/xrandr --output $MONITOR --mode ${env.resFHD} --rate ${env.hzMax}
-      ''}";
+      # the 120 Hz modeset moved into x11-setup (profiles/min.nix): doing it here as well meant
+      # a second modeset right as Emacs opened, which blanked the screen
       ExecStart = lib.mkForce "${pkgs.picom}/bin/picom --config /home/lynaten/nixos/dotfiles/picom.conf";
     };
   };
